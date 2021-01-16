@@ -2,6 +2,10 @@ local __selected = nil
 local __indexes = {}
 
 local procedure = {
+    --__internalID = 1,
+    --__internalPort = 1,
+    --__internalUpdateRate = 1,
+    
     __callbacks = {},
     __events = {},
     -- __callbacks will be an array of callback names added by the script, for events to call.
@@ -257,7 +261,13 @@ function new(port, updateRate)
     local internalUpdateRate = updateRate
     if internalUpdateRate == nil then internalUpdateRate = 1 end
     
-    return setmetatable({__internalID = internalID, __internalPort = internalPort, __internalUpdateRate = internalID}, {__index = procedure})
+    local data = {
+        __internalID = internalID,
+        __internalPort = internalPort,
+        __internalUpdateRate = internalID
+    }
+    setmetatable(data, {__index = procedure})
+    return data
 end
 function destroy(...)
     local procs = {...}

@@ -10,52 +10,50 @@ In this example:
         if master ran twice, stop master procedure.
 --]]
 
-_G.skynet_CBOR_path = "gorton/lua-cbor.lua"
-local skynet = require "skynet"
-
 os.loadAPI("gorton/procedure.lua")
 procedure = _G["gorton/procedure.lua"]
 _G["gorton/procedure.lua"] = nil
 
-EXAMPLE1_MAIN_PORT = 5
-EXAMPLE1_CHILD1_PORT = 5
-EXAMPLE1_CHILD2_PORT = 6
+EXAMPLE_MAIN_PORT = 5
+EXAMPLE_CHILD1_PORT = 6
+EXAMPLE_CHILD2_PORT = 7
 
 mainUpdates = 0
 childUpdates = 0
 
-mainProc = procedure.new(EXAMPLE_1_PORT)
-mainProc.registerCallback("__internalUpdate", function()
+mainProc = procedure.new(EXAMPLE_MAIN_PORT)
+mainProc:registerCallback("main_update", function()
     print("mainProc update")
     
-    local child1 = procedure.new(EXAMPLE1_CHILD1_PORT)
-    local child2 = procedure.new(EXAMPLE1_CHILD2_PORT)
+    local child1 = procedure.new(EXAMPLE_CHILD1_PORT)
+    local child2 = procedure.new(EXAMPLE_CHILD2_PORT)
     
     local childUpdate = function()
-        child2.registerQueuedEvent("childUpdate", EXAMPLE1_CHILD2_PORT, true, "childUpdateLimitCheck")
-    end
-    
-    child1.registerCallback("__internalUpdate", childUpdate)
-    child2.registerCallback("__internalUpdate", childUpdate)
-    
-    child2.registerCallback("childUpdateLimitCheck", function()
         childUpdates = childUpdates + 1
         print("child update - "..childUpdates)
         
         if childUpdates == 10 then
             procedure.destroy(child1, child2)
         end
-    end)
+    end
+    
+    child1:registerCallback("child1_update", childUpdate)
+    child1:registerTimedEvent(1, EXAMPLE_CHILD1_PORT, false, "child1_update")
+    
+    child2:registerCallback("child2_update", childUpdate)
+    child2:registerTimedEvent(1, EXAMPLE_CHILD2_PORT, false, "child2_update")
     
     procedure.start(child1, child2)
     
     mainUpdates = mainUpdates + 1
     if mainUpdates == 2 then
-        mainProc.stop()
+        mainProc:stop()
     end
 end)
 
-mainProc.start()
+mainProc:registerTimedEvent(1, EXAMPLE_MAIN_PORT, false, "main_update")
+
+mainProc:start()
 procedure.destroy(mainProc)
 
 --[[

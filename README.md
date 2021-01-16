@@ -2,7 +2,6 @@
 
 * **Description**
     * This is basically a wrapper for os.pullEvent with parallel advantages.
-    * 
 
 * **Basics**
     * First define a procedure with `procedure.new()`.
@@ -12,12 +11,12 @@
         * When registering an event you tell it what callback to call, whether to delete after being caught, a time to call it, etc.
     * start the procedure with `proc.start`.
         * alternatively, `procedure.start` can be used to start multiple at once.
-        * if a procedure is expected to stop itself do so with `procedure.stop`.
+        * if a procedure is expected to stop itself do so with `proc.stop`.
 
 --------
 
 * **Notes**
-    * The main thing to keep in mind so far: Multiple events within a procedure will run simultaneously no issue. However, if you start a new procedure from within an event, this will halt the current procedure. Basically new procedures run on the same thread as the current one. Figuring out a way to run procedures AND keep the procedure they were ran from active would be extremely useful in some cases. Such as if you wanted a main procedure to always be listening for modem_events (to receive instructions from another computer maybe) while also being able to run procedures within it and still listen. You could still achive this, just without the listener running while running child procedures.
+    * The main thing to keep in mind so far: Multiple events within a procedure will run simultaneously no issue. However, if you start a new procedure from within an event, this will halt the current procedure. Basically new procedures run on the same thread as the current one. Figuring out a way to run procedures AND keep the procedure they were ran from active would be extremely useful in some cases. Such as if you wanted a main procedure to always be listening for modem_events (to receive instructions from another computer maybe) while also being able to run procedures within it and still listen. You could still achive this, just without the listener running while running child procedures, unless of course you register the listener events to each procedure layer.
 
 --------
 
