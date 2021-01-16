@@ -161,19 +161,22 @@ local procedure = {
             -- modem_event | event, side, frequency, replyFrequency, message, distance
             
             local event = {os.pullEvent()}
-            for k,v in pairs(self.__events) do
-                if (type(v.expected_event) == "string" and v.expected_event == event[1]) then
-                    if v.expected_sender == nil or v.expected_sender == event[3] then
-                        --if v.run_after_tick == nil or v.run_after_tick <= os.clock() then
-                            --print("expected_event = string ("..v.expected_event..")")
-                            self:__event_call(k, event)
-                            break
-                        --end
+            
+            if self.__doEventCheck then
+                for k,v in pairs(self.__events) do
+                    if (type(v.expected_event) == "string" and v.expected_event == event[1]) then
+                        if v.expected_sender == nil or v.expected_sender == event[3] then
+                            --if v.run_after_tick == nil or v.run_after_tick <= os.clock() then
+                                --print("expected_event = string ("..v.expected_event..")")
+                                self:__event_call(k, event)
+                                break
+                            --end
+                        end
+                    elseif event[1] == "timer" and v.expected_event == event[2] then
+                        --print("expected_event = update time")
+                        self:__event_call(k, event)
+                        break
                     end
-                elseif event[1] == "timer" and v.expected_event == event[2] then
-                    --print("expected_event = update time")
-                    self:__event_call(k, event)
-                    break
                 end
             end
         end
@@ -237,14 +240,14 @@ local procedure = {
     __internalUpdate = function(self)
         --print("__internalUpdate")
         
-        local currTime = os.clock()
-        for k,v in pairs(self.__events) do
-            if v.scheduled_time ~= nil and v.scheduled_time <= currTime then
-                self:queueEventID(k)
-            end
-        end
-        
         if self.__doEventCheck then
+            local currTime = os.clock()
+            for k,v in pairs(self.__events) do
+                if v.scheduled_time ~= nil and v.scheduled_time <= currTime then
+                    self:queueEventID(k)
+                end
+            end
+        
             self:registerEvent(os.startTimer(self.__internalUpdateRate), self.__internalPort, true, "__internalUpdate")
         end
     end,
@@ -257,6 +260,7 @@ local procedure = {
 function new(port, updateRate)
     local internalID = 1
     while __indexes[internalID] ~= nil do internalID = internalID + 1 end
+    __indexes[internalID] = true
     
     local internalPort = port
     if internalPort == nil then internalPort = (os.getComputerID() + 1601) end
@@ -264,12 +268,10 @@ function new(port, updateRate)
     local internalUpdateRate = updateRate
     if internalUpdateRate == nil then internalUpdateRate = 1 end
     
-    local data = {
-        __internalID = internalID,
-        __internalPort = internalPort,
-        __internalUpdateRate = internalID
-    }
-    setmetatable(data, {__index = procedure})
+    local data = setmetatable({}, {__index = procedure})
+    data.__internalID = internalID
+    data.__internalPort = internalPort
+    data.__internalUpdateRate = internalID
     return data
 end
 function destroy(...)
@@ -277,7 +279,8 @@ function destroy(...)
     for k,v in pairs(procs) do
         if v.__internalID ~= nil then
             if v.running then
-                v.stop(v)
+                print("DEBUG STOP")
+                v:__stopProc()
                 sleep(0.01) -- an extra event just in case
             end
             
@@ -292,7 +295,7 @@ function start(...)
     local funcs = {}
     for k,v in pairs(procs) do
         funcs[k] = function()
-            v.start(v)
+            v:start()
         end
     end
     
