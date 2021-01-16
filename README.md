@@ -123,7 +123,7 @@ Registers an event to be watched for. This is required for an event to be picked
 
 --------
 
-### procInstance:registerScheduledEvent`(event, senderPort, seconds, callback, ...)`
+### procInstance:registerScheduledEvent`(event, senderPort, seconds, onetime, callback, ...)`
 
 (Alternative for `registerEvent`) Registers an event to be called after a specific timeframe.
 
@@ -133,6 +133,7 @@ This is different from `registerTimedEvent`. A "scheduled" event is based on `os
 >   * `event`: Event name.
 >   * `senderPort`: Same as `Frequency` in `os.pullEvent`.
 >   * `seconds`: Seconds from now the event should be scheduled for (gets added to `os.clock()` value).
+>   * `onetime`: Boolean value indicating whether this event should unregister itself after being called.
 >   * `callback`: Callback name to call when executing.
 >   * `...`: Parameters to include when calling callback.
 >* **Returns**

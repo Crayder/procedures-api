@@ -86,8 +86,9 @@ local procedure = {
         self:queueEvent(event)
         return new_id
     end,
-    registerScheduledEvent = function(self, event, senderPort, seconds, callback, ...)
-        local new_id = self:registerEvent(event, senderPort, true, callback, ...)
+    registerScheduledEvent = function(self, event, senderPort, seconds, ontime, callback, ...)
+        local new_id = self:registerEvent(event, senderPort, ontime, callback, ...)
+        self.__events[new_id].timed_seconds = seconds
         self.__events[new_id].scheduled_time = os.clock() + seconds
         return new_id
     end,
@@ -221,6 +222,8 @@ local procedure = {
             end
             if tmpEvent.remove_after then
                 self:unregisterEvent(eventid)
+            elseif tmpEvent.scheduled_time ~= nil then
+                self.__events[eventid].scheduled_time = os.clock() + self.__events[eventid].timed_seconds
             elseif type(tmpEvent.expected_event) == "number" then
                 -- start the timer back over.
                 tmpEvent.expected_event = os.startTimer(tmpEvent.timed_seconds)
