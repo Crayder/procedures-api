@@ -1,5 +1,4 @@
-local __selected = nil
-local __indexes = {}
+local __procedures = {}
 
 local procedure = {
     --__internalID = 1,
@@ -23,7 +22,7 @@ local procedure = {
         }
     --]]
 
-    __doEventCheck = true,
+    __doEventCheck = false,
     
     ----------
     
@@ -153,7 +152,9 @@ local procedure = {
         
         self.__doEventCheck = true
         local updateCall = self:registerCallback("__internalUpdate", self.__internalUpdate)
-        self:registerEvent(os.startTimer(self.__internalUpdateRate), self.__internalPort, true, "__internalUpdate")
+        --self:registerEvent(os.startTimer(self.__internalUpdateRate), self.__internalPort, true, "__internalUpdate")
+        self:registerQueuedEvent("__internalUpdateEvent", self.__internalPort, true, "__internalUpdate")
+        self:registerScheduledEvent("__internalUpdateEvent", self.__internalPort, 1, true, "__internalUpdate")
         
         while self.__doEventCheck do
             --print("self.__doEventCheck")
@@ -214,12 +215,12 @@ local procedure = {
                 --print("params: "..textutils.serialize(tmpEvent.callback_params))
                 if tmpEvent.callback_params ~= nil then
                     -- TODO: ensure this "tmpEvent.expected_sender == self.__internalPort" check is actually needed.
-                    if tmpEvent.expected_sender == self.__internalPort then func(self, eventdata, unpack(tmpEvent.callback_params))
-                    else func(eventdata, unpack(tmpEvent.callback_params))
+                    if tmpEvent.expected_sender == self.__internalPort then func(self, eventid, eventdata, unpack(tmpEvent.callback_params))
+                    else func(eventid, eventdata, unpack(tmpEvent.callback_params))
                     end
                 else
-                    if tmpEvent.expected_sender == self.__internalPort then func(self, eventdata)
-                    else func(eventdata)
+                    if tmpEvent.expected_sender == self.__internalPort then func(self, eventid, eventdata)
+                    else func(eventid, eventdata)
                     end
                 end
             end
@@ -238,7 +239,7 @@ local procedure = {
 
     -- other modules can hook into this with registerCallback("__internalUpdate", functionName)
     __internalUpdate = function(self)
-        --print("__internalUpdate")
+        print("__internalUpdate"..self.__internalID)
         
         if self.__doEventCheck then
             local currTime = os.clock()
@@ -248,22 +249,25 @@ local procedure = {
                 end
             end
         
-            self:registerEvent(os.startTimer(self.__internalUpdateRate), self.__internalPort, true, "__internalUpdate")
+            --self:registerEvent(os.startTimer(self.__internalUpdateRate), self.__internalPort, true, "__internalUpdate")
+            self:registerScheduledEvent("__internalUpdateEvent", self.__internalPort, 1, true, "__internalUpdate")
         end
     end,
     __stopProc = function(self)
         --print("__stopProc")
         self.__doEventCheck = false
+        
+        -- TODO: Loop through events and stop timers with os.cancelTimer
     end
 }
 
 function new(port, updateRate)
-    local internalID = 1
-    while __indexes[internalID] ~= nil do internalID = internalID + 1 end
-    __indexes[internalID] = true
+    local internalID = 0
+    repeat internalID = internalID + 1 until (__procedures[internalID] == nil)
+    __procedures[internalID] = true
     
     local internalPort = port
-    if internalPort == nil then internalPort = (os.getComputerID() + 1601) end
+    if internalPort == nil then internalPort = (os.getComputerID() + 1500) end
     
     local internalUpdateRate = updateRate
     if internalUpdateRate == nil then internalUpdateRate = 1 end
@@ -271,20 +275,20 @@ function new(port, updateRate)
     local data = setmetatable({}, {__index = procedure})
     data.__internalID = internalID
     data.__internalPort = internalPort
-    data.__internalUpdateRate = internalID
+    data.__internalUpdateRate = internalUpdateRate
     return data
 end
+
 function destroy(...)
     local procs = {...}
     for k,v in pairs(procs) do
         if v.__internalID ~= nil then
             if v.running then
-                print("DEBUG STOP")
                 v:__stopProc()
                 sleep(0.01) -- an extra event just in case
             end
             
-            __indexes[v.__internalID] = nil
+            __procedures[v.__internalID] = nil
             v = nil
         end
     end
@@ -294,10 +298,23 @@ function start(...)
     local procs = {...}
     local funcs = {}
     for k,v in pairs(procs) do
-        funcs[k] = function()
-            v:start()
+        if v.__internalID ~= nil then
+            funcs[k] = function()
+                v:start()
+            end
         end
     end
     
     parallel.waitForAll(unpack(funcs))
+end
+
+function stop(...)
+    local procs = {...}
+    for k,v in pairs(procs) do
+        if v.__internalID ~= nil then
+            if v.running then
+                v:__stopProc()
+            end
+        end
+    end
 end

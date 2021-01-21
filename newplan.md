@@ -1,0 +1,82 @@
+## Flow
+
+`Procedures` > `Events` > `Callbacks` > `Functions`.
+
+`Procedures` will be an organized, planned work flow made up of `Events` and listeners.
+`Events` will contains event data to listen for and on what to do when it is detected.
+`Callbacks` will contain a single or multiple `Functions` to call.
+
+----------------
+
+## Callback
+
+A callback is what is executed once an event is received. It will have a name to be called by. It can have multiple functions assigned to it, each will be called when the callback is. All will be called with the same parameters.
+
+Public:
+- `callback.register(name, functions)` - Registers function(s) to a callback name. If this name exists it will be added to, if not it will be created. Returns the callback of this name. Can be used to simply create/obtain the callback of a name if used with no functions passed.
+- `callback.unregister(name, functions)` - Unregisters function(s) from a callback name. If this name is empty it is destroyed.
+- `cback:add(functions)` - Add function(s) to this callback.
+- `cback:remove(functions)` - Remove function(s) from this callback.
+
+Data:
+- `cback.name` of the callback.
+- `cback.functions` to call when called upon.
+
+## Event
+
+An event will contain information to listen for. And also details on what to do when the listener detects this information.
+
+Public:
+- `event.new(name, channel, timer, callback, params)` - Create a new event.
+- `event.destroy(event/eventID)` - Destroy an event.
+- `event.get(eventID)` - Get an event's table by event ID.
+- `eve:setChannel(channelID)` - Change channel of this event.
+- `eve:setCallback(callback, ...)` - Change callback and params to use for this event.
+- `eve:queue()` - Queue this event using `os.queueEvent(eve.name, eve.id, eve.channel, unpack(eve.params))`.
+
+Data:
+- `eve.id` of the event.
+- `eve.name` of the event.
+- `eve.channelID` to send event to when queuing.
+- `eve.timerID` returned by `os.startTimer`. This will be ignored unless `Name` is "timer". This should probably only be used by procedure's methods.
+- `eve.callback` to call when detected.
+- `eve.params` to call callback with when detected, by default (can be overrided if queued from a procedure method).
+
+## Procedure
+
+Handler for an event queue and listener. The listener will filter events based on filters registered to it. If there are no filters added, listener will check all events created. Hint: It would be most efficient to add filters to catch only the events this procedure is expected to listen for.
+
+Filters will all add to the same of three lists: `Name Filters`, `Channel Filters`, or `Timer Filters`. If any of these lists are empty the listener will not filter by that type. That is;
+procedure.addFilter(`Name`, `Channel`, `Timer`)
+- `Name` - Add name to `Name Filters`.
+- `Channel` - Add a channel ID to `Channel Filters`. `-1` for local events (shortcut for this procedure's channel). 
+- `Timer` - Add a timer ID to `Timer Filters`.
+
+The procedure must be started to be listening, `procedure:start`. Two internal callbacks and events will be created when doing so:
+- A constant `Update Timer Event` that calls the `Internal Update Callback` every second. Automatically starts.
+- An endpoint, the "stop procedure" button. Called while the procedure is running using `procedure:stop`, this queues the `Internal Stop Event` which of course calls the `Internal Stop Callback`.
+
+Will provide a way to queue events immediately, schedule events, and set timed events. Handles setting timers and adding the filter for it, as well as checking for scheduled events in `Internal Update Callback` (using `os.clock` times). Scheduled events and timers will both be able to be one time or repeating and can be stopped. Scheduled and timed events will simply call `event:queue` at the specified time.
+
+When queuing any event using the procedure method you can pass `Callback Params` to override the event's `Callback Params`. Also this method will automatically add it to the procedure's listeners.
+
+Public:
+- `procedure.new(channel, filters)` - Create a new procedure.
+- `procedure.destroy(proc/procID)` - Destroy a procedure.
+- `procedure.start(...)` - Start multiple procedures at once (params can all be single or a table).
+- `procedure.stop(...)` - Stop multiple procedures at once (params can all be single or a table).
+- `proc:start()` - Start this procedure.
+- `proc:stop()` - Stop this procedure.
+- `proc:setChannel()` - Change channel of this procedure.
+- `proc:addFilter(names, channels, timers)` - Add filters to this procedure (params can all be single or a table). 
+- `proc:removeFilter(names, channels, timers)` - Remove filters from this procedure (params can all be single or a table).
+- `proc:queueEvent(event, ...)` - Queue an event immediately. Add to listener.
+- `proc:queueTimedEvent(event, seconds, repeating, ...)` - Queue an event after `os.startTimer` timer runs. Add to listener.
+- `proc:queueScheduleEvent(event, time, repeating, ...)` - Queue an event at a specified `os.clock` time. Add to listener.
+
+Data:
+- `proc.id` of this procedure.
+- `proc.channel` the procedure will run local events on.
+- `proc.filters` to use in the listener.
+
+

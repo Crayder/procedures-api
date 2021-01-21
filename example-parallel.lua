@@ -9,9 +9,9 @@ firstProc = procedure.new(EXAMPLE_PORT_1)
 secondProc = procedure.new(EXAMPLE_PORT_2)
     
 totalUpdates = 0
-updateCallback = function()
+updateCallback = function(eventid, eventdata)
     totalUpdates = totalUpdates + 1
-    print("update - "..totalUpdates)
+    print("update("..eventid..") - "..totalUpdates)
     
     if totalUpdates == 10 then
         print("stopping")
