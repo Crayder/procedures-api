@@ -1,12 +1,20 @@
 ## Flow
 
-`Procedures` > `Events` > `Callbacks` > `Functions`.
+The whole point of this API is to not have to use `os.pullEvent` and make working with routines much easier. To better understand, first you'll need to know how things flow between the three main modules (`Procedures`,  `Events`, and `Callbacks`).
 
-`Procedures` will be an organized, planned work flow made up of `Events` and listeners.
-`Events` will contains event data to listen for and on what to do when it is detected.
-`Callbacks` will contain a single or multiple `Functions` to call.
+`Procedures` > `Events` > `Callbacks` > `Functions`
+
+`Procedures` will be organized, planned work flows made up of `Events` and listeners.
+
+`Events` will contains event data to listen for and a `Callback` to call when detected.
+
+`Callbacks` will contain a single or multiple `Functions` to call when called on.
 
 ----------------
+
+# Modules
+
+Below is a breakdown of each module: what it's purpose is, methods it provides, and data that can be accessed from it. These are the basics of the whole API.
 
 ## Callback
 
