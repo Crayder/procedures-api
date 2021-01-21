@@ -52,13 +52,15 @@ procedure.addFilter(`Name`, `Channel`, `Timer`)
 - `Channel` - Add a channel ID to `Channel Filters`. `-1` for local events (shortcut for this procedure's channel). 
 - `Timer` - Add a timer ID to `Timer Filters`.
 
-The procedure must be started to be listening, `procedure:start`. Two internal callbacks and events will be created when doing so:
+The procedure must be started to be listening, `proc:start`. Two internal callbacks and events will be created when doing so:
 - A constant `Update Timer Event` that calls the `Internal Update Callback` every second. Automatically starts.
 - An endpoint, the "stop procedure" button. Called while the procedure is running using `procedure:stop`, this queues the `Internal Stop Event` which of course calls the `Internal Stop Callback`.
 
 Will provide a way to queue events immediately, schedule events, and set timed events. Handles setting timers and adding the filter for it, as well as checking for scheduled events in `Internal Update Callback` (using `os.clock` times). Scheduled events and timers will both be able to be one time or repeating and can be stopped. Scheduled and timed events will simply call `event:queue` at the specified time.
 
 When queuing any event using the procedure method you can pass `Callback Params` to override the event's `Callback Params`. Also this method will automatically add it to the procedure's listeners.
+
+Once the procedure is started, no code beyond `proc:start` will run until the procedure is compeleted. You could however, run multiple procedures at once using `procedure.start`.
 
 Public:
 - `procedure.new(channel, filters)` - Create a new procedure.
