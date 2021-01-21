@@ -23,6 +23,8 @@ A callback is what is executed once an event is received. It will have a name to
 Public:
 - `callback.register(name, functions)` - Registers function(s) to a callback name. If this name exists it will be added to, if not it will be created. Returns the callback of this name. Can be used to simply create/obtain the callback of a name if used with no functions passed.
 - `callback.unregister(name, functions)` - Unregisters function(s) from a callback name. If this name is empty it is destroyed.
+
+Methods:
 - `cback:add(functions)` - Add function(s) to this callback.
 - `cback:remove(functions)` - Remove function(s) from this callback.
 
@@ -38,6 +40,8 @@ Public:
 - `event.new(name, channel, timer, callback, params)` - Create a new event.
 - `event.destroy(event/eventID)` - Destroy an event.
 - `event.get(eventID)` - Get an event's table by event ID.
+
+Methods:
 - `eve:setChannel(channelID)` - Change channel of this event.
 - `eve:setCallback(callback, ...)` - Change callback and params to use for this event.
 - `eve:queue()` - Queue this event using `os.queueEvent(eve.name, eve.id, eve.channel, unpack(eve.params))`.
@@ -75,6 +79,8 @@ Public:
 - `procedure.destroy(proc/procID)` - Destroy a procedure.
 - `procedure.start(...)` - Start multiple procedures at once (params can all be single or a table).
 - `procedure.stop(...)` - Stop multiple procedures at once (params can all be single or a table).
+
+Methods:
 - `proc:start()` - Start this procedure.
 - `proc:stop()` - Stop this procedure.
 - `proc:setChannel()` - Change channel of this procedure.
