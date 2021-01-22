@@ -46,15 +46,17 @@ Public:
 - `event.get(eventID)` - Get an event's table by event ID.
 
 Methods:
-- `eve:setChannel(channelID)` - Change channel of this event.
+- `eve:setChannel(channel)` - Change channel of this event.
 - `eve:setCallback(callback, ...)` - Change callback and params to use for this event.
-- `eve:queue()` - Queue this event using `os.queueEvent(eve.name, eve.id, eve.channel, unpack(eve.params))`.
+- `eve:call(params)` - Calls `eve.callback` with given params or `eve.params` if none are passed.
+- `eve:queue(params)` - Queue this event using `os.queueEvent(eve.name, eve.id, eve.channel, unpack(eve.params))` with given params or `eve.params` if none are passed.
+- `eve:copy(params)` - Returns deep copy of this event.
 
 Data:
 - `eve.id` of the event.
 - `eve.name` of the event.
-- `eve.channelID` to send event to when queuing.
-- `eve.timerID` returned by `os.startTimer`. This will be ignored unless `Name` is "timer". This should probably only be used by procedure's methods.
+- `eve.channel` to send event to when queuing.
+- `eve.timer` returned by `os.startTimer`. This will be ignored unless `Name` is "timer". This should probably only be used by procedure's methods.
 - `eve.callback` to call when detected.
 - `eve.params` to call callback with when detected, by default (can be overrided if queued from a procedure method).
 
