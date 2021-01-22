@@ -31,9 +31,9 @@ local __event = {
     -- Params: `...` (overrides self's params if not nil)
     queue = function(self, ...)
         if #({...}) > 0 then
-            return os.queueEvent("gorton_event", self.name, self.id, self.channel, ...)
+            return os.queueEvent(self.name, self.id, self.channel, nil, ...)
         else
-            return os.queueEvent("gorton_event", self.name, self.id, self.channel, unpack(self.params))
+            return os.queueEvent(self.name, self.id, self.channel, nil, unpack(self.params))
         end
     end,
     

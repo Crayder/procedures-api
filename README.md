@@ -83,18 +83,22 @@ Once the procedure is started, no code beyond `proc:start` will run until the pr
 Public:
 - `procedure.new(channel, filters)` - Create a new procedure.
 - `procedure.destroy(proc/procID)` - Destroy a procedure.
-- `procedure.start(...)` - Start multiple procedures at once (params can all be single or a table).
-- `procedure.stop(...)` - Stop multiple procedures at once (params can all be single or a table).
+- * `procedure.start(...)` - Start multiple procedures at once (params can all be single or a table).
+- * `procedure.stop(...)` - Stop multiple procedures at once (params can all be single or a table).
+- `procedure.get(proc)` - Get an procedure's table by event ID.
 
 Methods:
-- `proc:start()` - Start this procedure.
-- `proc:stop()` - Stop this procedure.
+- * `proc:start()` - Start this procedure.
+- * `proc:stop()` - Stop this procedure.
 - `proc:setChannel()` - Change channel of this procedure.
 - `proc:addFilter(names, channels, timers)` - Add filters to this procedure (params can all be single or a table). 
 - `proc:removeFilter(names, channels, timers)` - Remove filters from this procedure (params can all be single or a table).
+- `proc:getFilterNameIndex(name)` - Get index of filter name if exists.
+- `proc:getFilterChannelIndex(channel)` - Get index of filter channel if exists.
+- `proc:getFilterTimerIndex(timer)` - Get index of filter timer if exists.
 - `proc:queueEvent(event, ...)` - Queue an event immediately. Add to listener.
-- `proc:queueTimedEvent(event, seconds, repeating, ...)` - Queue an event after `os.startTimer` timer runs. Add to listener.
-- `proc:queueScheduleEvent(event, time, repeating, ...)` - Queue an event at a specified `os.clock` time. Add to listener.
+- * `proc:queueTimedEvent(event, seconds, repeating, ...)` - Queue an event after `os.startTimer` timer runs. Add to listener.
+- * `proc:queueScheduleEvent(event, time, repeating, ...)` - Queue an event at a specified `os.clock` time. Add to listener.
 
 Data:
 - `proc.id` of this procedure.
