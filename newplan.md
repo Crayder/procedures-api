@@ -23,10 +23,14 @@ A callback is what is executed once an event is received. It will have a name to
 Public:
 - `callback.register(name, functions)` - Registers function(s) to a callback name. If this name exists it will be added to, if not it will be created. Returns the callback of this name. Can be used to simply create/obtain the callback of a name if used with no functions passed.
 - `callback.unregister(name, functions)` - Unregisters function(s) from a callback name. If this name is empty it is destroyed.
+- `callback.get(name)` - Returns callback table for given name, if it exists.
 
 Methods:
-- `cback:add(functions)` - Add function(s) to this callback.
-- `cback:remove(functions)` - Remove function(s) from this callback.
+- `cback:addFunction(functions)` - Add function(s) to this callback.
+- `cback:removeFunction(functions)` - Remove function(s) from this callback.
+- `cback:getFunctionID(function)` - Get ID of function returned by `cback:addFunction`.
+- `cback:call(params)` - Call all functions with given parameters.
+- `cback:copy(params)` - Returns deep copy of this callback.
 
 Data:
 - `cback.name` of the callback.
