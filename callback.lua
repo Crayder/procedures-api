@@ -112,17 +112,23 @@ local function unregister(name, ...)
         end
         
         if cback ~= nil and #(cback.functions) == 0 then
-            cback = nil
+            table.remove(__callbacks, cback.name)
         end
     end
 end
-moduleTable.destroy = destroy
+moduleTable.unregister = unregister
 
 -- Returns table of given callback name.
 -- Params: callback name
-local function get(name)
+local function getTable(name)
     return __callbacks[name]
 end
-moduleTable.get = get
+moduleTable.getTable = getTable
+
+-- Returns list of all callback tables.
+local function getAll()
+    return __callbacks
+end
+moduleTable.getAll = getAll
 
 return moduleTable

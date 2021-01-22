@@ -6,6 +6,7 @@ local __event = {
     name = nil, -- event name or timer id
     channel = nil, -- channel this event would occur with
     timer = nil, -- timer id (assumed currently running if not nil)
+    scheduled = nil, -- scheduled id
     callback = nil, -- callback 
     params = nil, -- callback params
     
@@ -84,22 +85,30 @@ local function new(ename, echannel, ecallback, ...)
 end
 moduleTable.new = new
 
--- Returns table of given event ID.
--- Params: eventid
-local function get(eventid)
-    return __events[eventid]
-end
-moduleTable.get = get
-
 -- Destroys given event/ID.
 -- Params: event id or event
 local function destroy(e)
     if type(e) == "number" then
-        __events[e] = nil
-    else
-        e = nil
+        table.remove(__events, e)
+    elseif type(e) == "table" then
+        if e.id ~= nil then
+            table.remove(__events, e.id)
+        end
     end
 end
 moduleTable.destroy = destroy
+
+-- Returns table of given event ID.
+-- Params: eventid
+local function getTable(eventid)
+    return __events[eventid]
+end
+moduleTable.getTable = getTable
+
+-- Returns list of all event tables.
+local function getAll()
+    return __events
+end
+moduleTable.getAll = getAll
 
 return moduleTable

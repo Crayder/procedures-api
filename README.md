@@ -23,7 +23,8 @@ A callback is what is executed once an event is received. It will have a name to
 Public:
 - `callback.register(name, functions)` - Registers function(s) to a callback name. If this name exists it will be added to, if not it will be created. Returns the callback of this name. Can be used to simply create/obtain the callback of a name if used with no functions passed.
 - `callback.unregister(name, functions)` - Unregisters function(s) from a callback name. If this name is empty it is destroyed.
-- `callback.get(name)` - Returns callback table for given name, if it exists.
+- `callback.getTable(name)` - Returns callback table for given name, if it exists.
+- `callback.getAll()` - Returns all callback tables.
 
 Methods:
 - `cback:addFunction(functions)` - Add function(s) to this callback.
@@ -43,7 +44,8 @@ An event will contain information to listen for. And also details on what to do 
 Public:
 - `event.new(name, channel, timer, callback, params)` - Create a new event.
 - `event.destroy(event/eventID)` - Destroy an event.
-- `event.get(eventID)` - Get an event's table by event ID.
+- `event.getTable(eventID)` - Get an event's table by event ID.
+- `event.getAll()` - Returns all event tables.
 
 Methods:
 - `eve:setChannel(channel)` - Change channel of this event.
@@ -85,7 +87,8 @@ Public:
 - `procedure.destroy(proc/procID)` - Destroy a procedure.
 - * `procedure.start(...)` - Start multiple procedures at once (params can all be single or a table).
 - * `procedure.stop(...)` - Stop multiple procedures at once (params can all be single or a table).
-- `procedure.get(proc)` - Get an procedure's table by event ID.
+- `procedure.getTable(proc)` - Get an procedure's table by event ID.
+- `procedure.getAll()` - Returns all procedure tables.
 
 Methods:
 - * `proc:start()` - Start this procedure.

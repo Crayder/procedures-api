@@ -7,15 +7,47 @@ local __procedures = {}
 local __procedure = {
     id = nil, -- procedure id
     channel = nil, -- channel used for internal procedure events
-    filters = {
+    filters = { -- filters, checked in order
+        ids = {},
         names = {},
         channels = {},
         timers = {}
     },
     
-    -- Add filter for given params.
+    getFilterNameIndex = function(self, name)
+        if type(name) == "string" then
+            for k,v in pairs(self.filters.names) do
+                if v == name then
+                    return k
+                end
+            end
+        end
+        return nil
+    end,
+    getFilterChannelIndex = function(self, channel)
+        if type(channel) == "number" then
+            for k,v in pairs(self.filters.channels) do
+                if v == channel then
+                    return k
+                end
+            end
+        end
+        return nil
+    end,
+    getFilterTimerIndex = function(self, timer)
+        if type(timer) == "number" then
+            for k,v in pairs(self.filters.timers) do
+                if v == timer then
+                    return k
+                end
+            end
+        end
+        return nil
+    end,
+    
+    -- Add filter for given params, event ID is always checked first so it's likely all you need. Unless working with modem_event's and such.
     -- Notes: Use `nil` for params you won't be adding.
-    addFilter = function(self, names, channels, timers)
+    addFilter = function(self, ids, names, channels, timers)
         local did = false
         
         if names ~= nil then
@@ -63,40 +95,9 @@ local __procedure = {
         return did
     end,
     
-    getFilterNameIndex = function(self, name)
-        if type(name) == "string" then
-            for k,v in pairs(self.filters.names) do
-                if v == name then
-                    return k
-                end
-            end
-        end
-        return nil
-    end,
-    getFilterChannelIndex = function(self, channel)
-        if type(channel) == "number" then
-            for k,v in pairs(self.filters.channels) do
-                if v == channel then
-                    return k
-                end
-            end
-        end
-        return nil
-    end,
-    getFilterTimerIndex = function(self, timer)
-        if type(timer) == "number" then
-            for k,v in pairs(self.filters.timers) do
-                if v == timer then
-                    return k
-                end
-            end
-        end
-        return nil
-    end,
-    
     -- Remove filter by registered id.
-    -- Params: `filterid` (function id returned by `addFunction`)
-    removeFilter = function(self, names, channels, timers)
+    -- Params: `filterid` (funcid returned by `addFunction`)
+    removeFilter = function(self, ids, names, channels, timers)
         local did = false
         
         if names ~= nil then
@@ -156,21 +157,42 @@ local __procedure = {
     
     -- Queue an event specifically for this procedure.
     -- Params: event, override params
-    -- TODO: scheduleEvent = function(self, event, ...)
+    -- TODO: scheduleEvent(self, event, ...)
     
-    -- Queues an event specifically for this procedure, this should catch it next.
+    -- Queues an event to be called called specifically for this procedure, this should catch it next.
     queueEvent = function(self, e, ...)
         if #({...}) > 0 then
+            self:addFilter(e.id)
             return os.queueEvent(e.name, e.id, e.channel, self.id, ...)
         else
+            self:addFilter(e.id)
             return os.queueEvent(e.name, e.id, e.channel, self.id, unpack(e.params))
         end
+    end,
+    -- Set timer to call an event.
+    timerEvent = function(self, e, seconds, repeating)
+        e.timer = os.startTimer(seconds)
+        self:addFilter(nil, nil, e.timer)
+        -- TODO: in listener, if name is "timer", loop through filter ids and see if they have a scheduled time
+        return true
+    end,
+    -- Scheduled an event to be called specifically for this procedure.
+    scheduleEvent = function(self, e, seconds, ...)
+        e.scheduled = os.clock() + seconds
+        self:addFilter(e.id)
+        -- TODO: in listener, during the update phase, loop through filter ids and see if they have a scheduled time
+        return true
     end
+    
+    --TODO: in 'start', create a repeating timer event that calls __internalUpdate(self, event id)
 }
+
+local function __internalUpdate(procid, eventid)
+end
 
 -- Creates a new procedure.
 -- Params: procedure port, procedure update rate
-function new(eport, eupdateRate)
+local function new(eport, eupdateRate)
     local procid = 1
     while self.__procedures[procid] ~= nil do
         procid = procid + 1
@@ -194,22 +216,30 @@ function new(eport, eupdateRate)
 end
 moduleTable.new = new
 
--- Returns table of given procedure ID.
--- Params: procedure id
-local function get(procid)
-    return __procedures[procid]
-end
-moduleTable.get = get
-
 -- Destroys given procedure/ID.
 -- Params: procedure id or procedure
 local function destroy(e)
     if type(e) == "number" then
-        __procedures[e] = nil
-    else
-        e = nil
+        table.remove(__procedures, e)
+    elseif type(e) == "table" then
+        if e.id ~= nil then
+            table.remove(__procedures, e.id)
+        end
     end
 end
 moduleTable.destroy = destroy
+
+-- Returns table of given procedure ID.
+-- Params: procedure id
+local function getTable(procid)
+    return __procedures[procid]
+end
+moduleTable.getTable = getTable
+
+-- Returns list of all procedure tables.
+local function getAll()
+    return __procedures
+end
+moduleTable.getAll = getAll
 
 return moduleTable
