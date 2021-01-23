@@ -8,13 +8,10 @@ local __event = {
     callback = nil, -- callback 
     params = nil, -- callback params
     
-    -- Returns deep copy of self.
     copy = function(self)
         return new(self.name, self.channel, self.callback, unpack(self.params))
     end,
     
-    -- Calls `_.callback:call` with event parameters (event ID, given params or _.params).
-    -- Params: `...` (overrides self's params if not nil)
     call = function(self, ...)
         if self.callback ~= nil and self.callback.name ~= nil then
             if #({...}) > 0 then
@@ -26,8 +23,6 @@ local __event = {
         return nil
     end,
     
-    -- Queues an event globally, all running procedures should catch it next.
-    -- Params: `...` (overrides self's params if not nil)
     queue = function(self, ...)
         if #({...}) > 0 then
             return os.queueEvent(self.name, self.id, self.channel, nil, ...)
@@ -36,29 +31,26 @@ local __event = {
         end
     end,
     
-    setChannel = function(self, newChannel)
-        if type(newChannel) == "number" then
-            self.channel = newChannel
+    setChannel = function(self, echannel)
+        if type(echannel) == "number" then
+            self.channel = echannel
         end
     end,
     
-    setCallback = function(self, newCallback, ...)
-        local newParams = {...}
-        
-        if newCallback.name ~= nil then
-            self.callback = newCallback
-        elseif type(newCallback) == "string" then -- assume it's a name of an already created callback
-            self.callback = callback.get(newCallback)
+    setCallback = function(self, ecallback, ...)
+        if ecallback.name ~= nil then
+            self.callback = ecallback
+        elseif type(ecallback) == "string" then
+            self.callback = callback.get(ecallback)
         end
         
+        local newParams = {...}
         if #newParams ~= 0 then
             self.params = params
         end
     end
 }
 
--- Creates a new event.
--- Params: event name, sender channel, callback/callback name, params
 local function new(ename, echannel, ecallback, ...)
     local eventid = 1
     while self.__events[eventid] ~= nil do
@@ -73,7 +65,7 @@ local function new(ename, echannel, ecallback, ...)
     
     if ecallback.name ~= nil then
         __events[eventid].callback = ecallback
-    else -- assume it's a name of an already created callback
+    else
         __events[eventid].callback = callback.get(ecallback)
     end
     
@@ -83,27 +75,23 @@ local function new(ename, echannel, ecallback, ...)
 end
 moduleTable.new = new
 
--- Destroys given event/ID.
--- Params: event id or event
-local function destroy(e)
-    if type(e) == "number" then
-        table.remove(__events, e)
-    elseif type(e) == "table" then
-        if e.id ~= nil then
-            table.remove(__events, e.id)
+local function destroy(event)
+    if type(event) == "number" then
+        table.remove(__events, event)
+    elseif type(event) == "table" then
+        if event.id ~= nil then
+            table.remove(__events, event.id)
         end
+        event = nil
     end
 end
 moduleTable.destroy = destroy
 
--- Returns table of given event ID.
--- Params: eventid
 local function getTable(eventid)
     return __events[eventid]
 end
 moduleTable.getTable = getTable
 
--- Returns list of all event tables.
 local function getAll()
     return __events
 end

@@ -8,11 +8,9 @@ local __procedure = {
     id = nil, -- procedure id
     channel = nil, -- channel used for internal procedure events
     filters = { -- filters, checked in order
-        --names = {},
-        --channels = {},
-        events = {},
-        timers = {},
-        scheduled = {}
+        events = {}, -- {event table, params table}
+        timers = {}, -- {event table, seconds, repeating boolean, params table}
+        scheduled = {} -- {event table, seconds, time scheduled, repeating boolean, params table}
     },
     
     isRunning = false,
@@ -24,8 +22,6 @@ local __procedure = {
         end
     end,
     
-    -- TODO: addQueueEvent, to add events already queued by event:queue.
-    -- Queues an event to be called called specifically for this procedure, this should catch it next.
     queueEvent = function(self, e, ...)
         self.filters.events[e.id] = {event = e, params = {...}}
         
@@ -35,20 +31,18 @@ local __procedure = {
             return os.queueEvent(e.name, e.id, e.channel, self.id, unpack(e.params))
         end
     end,
+    -- TODO: addQueueEvent, to add events already queued by event:queue.
     -- TODO: cancelQueueEvent - simply remove it from the filters
     
-    -- TODO: addTimerEvent, to add an already created timer and assign an event
-    -- Set timer to call an event.    
     timerEvent = function(self, e, secs, repeated, ...)
         local timerid = os.startTimer(secs)
         self.filters.timers[timerid] = {event = e, seconds = secs, repeating = repeated, params = {...}}
         
-        -- TODO: in listener, if name is "timer", loop through filter ids and see if they have a scheduled time
         return timerid
     end,
+    -- TODO: addTimerEvent, to add an already created timer and assign an event
     -- TODO: cancelTimerEvent - simply remove it from the filters
     
-    -- Scheduled an event to be called specifically for this procedure.
     scheduleEvent = function(self, e, secs, repeated, ...)
         local scheduledID = 1
         while self.filters.scheduled[scheduledID] ~= nil do
@@ -57,12 +51,10 @@ local __procedure = {
         
         self.filters.scheduled[scheduledID] = {event = e, seconds = secs, time = (os.clock() + secs), repeating = repeated, params = {...}}
         
-        -- TODO: in listener, during the update phase, loop through scheduled filters and check for this one's time
         return scheduledID
     end,
     -- TODO: cancelScheduledEvent - simply remove it from the filters
     
-    --TODO: in 'start', create a repeating timer event that calls __internalUpdate(self, event id)
     start = function(self)
         self.isRunning = true
         
@@ -97,7 +89,7 @@ local __procedure = {
         local stopCallback = callback.register("internalStop_"..self.id, function()
             self.continueRunning = false
         end)
-        self.__stopEvent = event.new("e_internalStop_"..self.id, self.channel, stopCallback)
+        self.__stopProcedure = event.new("e_internalStop_"..self.id, self.channel, stopCallback)
         
         self.continueRunning = true
         while self.continueRunning do
@@ -131,15 +123,15 @@ local __procedure = {
         callback.unregister(updateCallback)
         callback.unregister(stopCallback)
         event.destroy(updateEvent)
-        event.destroy(self.__stopEvent)
+        event.destroy(self.__stopProcedure)
         
         self.isRunning = false
     end,
     
-    __stopEvent = nil,
+    __stopProcedure = nil,
     stop = function(self)
         if self.isRunning then
-            self:queueEvent(self.__stopEvent)
+            self:queueEvent(self.__stopProcedure)
         end
     end
 }
@@ -147,8 +139,6 @@ local __procedure = {
 local function __internalUpdate(procid, eventid)
 end
 
--- Creates a new procedure.
--- Params: procedure port, procedure update rate
 local function new(eport, eupdateRate)
     local procid = 1
     while self.__procedures[procid] ~= nil do
@@ -173,27 +163,51 @@ local function new(eport, eupdateRate)
 end
 moduleTable.new = new
 
--- Destroys given procedure/ID.
--- Params: procedure id or procedure
-local function destroy(e)
-    if type(e) == "number" then
-        table.remove(__procedures, e)
-    elseif type(e) == "table" then
-        if e.id ~= nil then
-            table.remove(__procedures, e.id)
+local function destroy(proc)
+    if type(proc) == "number" then
+        proc = getTable(proc)
+    end
+    
+    if type(proc) == "table" then
+        if proc.id ~= nil then
+            if proc.isRunning then
+                v.__stopProcedure:call()
+            end
+            
+            table.remove(__procedures, proc.id)
         end
     end
 end
 moduleTable.destroy = destroy
 
--- Returns table of given procedure ID.
--- Params: procedure id
+function start(...)
+    local procs = {...}
+    local funcs = {}
+    for k,v in pairs(procs) do
+        if v.id ~= nil and v.isRunning == false then
+            funcs[k] = function()
+                v:start()
+            end
+        end
+    end
+    
+    parallel.waitForAll(unpack(funcs))
+end
+
+function stop(...)
+    local procs = {...}
+    for k,v in pairs(procs) do
+        if v.id ~= nil and v.isRunning == true then
+            v.__stopProcedure:call()
+        end
+    end
+end
+
 local function getTable(procid)
     return __procedures[procid]
 end
 moduleTable.getTable = getTable
 
--- Returns list of all procedure tables.
 local function getAll()
     return __procedures
 end

@@ -5,16 +5,16 @@ local __callback = {
     name = nil, -- callback name
     functions = {}, -- registered functions
     
-    -- Calls all registered functions with given params.
-    -- Params: `...` (params to call functions with)
+    copy = function(self)
+        return register(self.name, unpack(self.functions))
+    end,
+    
     call = function(self, ...)
         for k,func in pairs(self.functions) do
             func(...)
         end
     end,
     
-    -- Add functions by passed function or function name.
-    -- Params: `func` (function or function name)
     addFunction = function(self, func)
         if type(func) ~= "function" then
             if type(_G[func]) == "function" then
@@ -34,8 +34,6 @@ local __callback = {
         return funcid
     end,
     
-    -- Remove function by registered id.
-    -- Params: `funcid` (function id returned by `addFunction`)
     removeFunction = function(self, func)
         local funcid = nil
         if type(func) == "function" then
@@ -50,8 +48,6 @@ local __callback = {
         return nil
     end,
     
-    -- Remove function by registered id.
-    -- Params: `funcid` (function id returned by `addFunction`)
     getFunctionID = function(self, func)
         if type(func) == "function" then
             for k,v in pairs(self.functions) do
@@ -61,16 +57,9 @@ local __callback = {
             end
         end
         return nil
-    end,
-    
-    -- Returns deep copy of self.
-    copy = function(self)
-        return register(self.name, unpack(self.functions))
     end
 }
 
--- Creates a new callback and registers all passed functions.
--- Params: `...` (functions to register)
 local function register(name, ...)
     if __callbacks[name] == nil then
         __callbacks[name] = {}
@@ -91,8 +80,6 @@ local function register(name, ...)
 end
 moduleTable.register = register
 
--- Destroys given callback name or unregisters given functions from it.
--- Params: callback name or callback table
 local function unregister(name, ...)
     local cback = nil
     if type(name) == "string" then
@@ -122,14 +109,11 @@ local function unregister(name, ...)
 end
 moduleTable.unregister = unregister
 
--- Returns table of given callback name.
--- Params: callback name
 local function getTable(name)
     return __callbacks[name]
 end
 moduleTable.getTable = getTable
 
--- Returns list of all callback tables.
 local function getAll()
     return __callbacks
 end
