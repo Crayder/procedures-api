@@ -3,10 +3,8 @@ local moduleTable = {}
 local __events = {}
 local __event = {
     id = nil, -- event id
-    name = nil, -- event name or timer id
+    name = nil, -- event name
     channel = nil, -- channel this event would occur with
-    timer = nil, -- timer id (assumed currently running if not nil)
-    scheduled = nil, -- scheduled id
     callback = nil, -- callback 
     params = nil, -- callback params
     
@@ -60,7 +58,7 @@ local __event = {
 }
 
 -- Creates a new event.
--- Params: event name/timer id, sender channel, callback/callback name, params
+-- Params: event name, sender channel, callback/callback name, params
 local function new(ename, echannel, ecallback, ...)
     local eventid = 1
     while self.__events[eventid] ~= nil do

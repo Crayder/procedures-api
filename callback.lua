@@ -103,11 +103,15 @@ local function unregister(name, ...)
     
     if cback ~= nil and cback.functions ~= nil then
         local toUnregister = {...}
-        for k,v in pairs(toUnregister) do
-            if type(v) == "function" then
-                cback:removeFunction(v)
-            elseif type(v) == "number" then
-                cback:removeFunction(cback.functions[v])
+        if #toUnregister == 0 then
+            cback.functions = {}
+        else
+            for k,v in pairs(toUnregister) do
+                if type(v) == "function" then
+                    cback:removeFunction(v)
+                elseif type(v) == "number" then
+                    cback:removeFunction(cback.functions[v])
+                end
             end
         end
         

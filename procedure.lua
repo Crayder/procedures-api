@@ -8,146 +8,15 @@ local __procedure = {
     id = nil, -- procedure id
     channel = nil, -- channel used for internal procedure events
     filters = { -- filters, checked in order
-        ids = {},
-        names = {},
-        channels = {},
-        timers = {}
+        --names = {},
+        --channels = {},
+        events = {},
+        timers = {},
+        scheduled = {}
     },
     
-    getFilterNameIndex = function(self, name)
-        if type(name) == "string" then
-            for k,v in pairs(self.filters.names) do
-                if v == name then
-                    return k
-                end
-            end
-        end
-        return nil
-    end,
-    getFilterChannelIndex = function(self, channel)
-        if type(channel) == "number" then
-            for k,v in pairs(self.filters.channels) do
-                if v == channel then
-                    return k
-                end
-            end
-        end
-        return nil
-    end,
-    getFilterTimerIndex = function(self, timer)
-        if type(timer) == "number" then
-            for k,v in pairs(self.filters.timers) do
-                if v == timer then
-                    return k
-                end
-            end
-        end
-        return nil
-    end,
-    
-    -- Add filter for given params, event ID is always checked first so it's likely all you need. Unless working with modem_event's and such.
-    -- Notes: Use `nil` for params you won't be adding.
-    addFilter = function(self, ids, names, channels, timers)
-        local did = false
-        
-        if names ~= nil then
-            if type(names) == "table" and #names ~= 0 then
-                for k,v in pairs(names) do
-                    if type(v) == "string" then
-                        table.insert(self.filters.names, v)
-                        did = true
-                    end
-                end
-            elseif type(names) == "string" then
-                table.insert(self.filters.names, names)
-                did = true
-            end
-        end
-        
-        if channels ~= nil then
-            if type(channels) == "table" and #channels ~= 0 then
-                for k,v in pairs(channels) do
-                    if type(v) == "number" then
-                        table.insert(self.filters.channels, v)
-                        did = true
-                    end
-                end
-            elseif type(channels) == "number" then
-                table.insert(self.filters.channels, channels)
-                did = true
-            end
-        end
-        
-        if timers ~= nil then
-            if type(timers) == "table" and #timers ~= 0 then
-                for k,v in pairs(timers) do
-                    if type(v) == "number" then
-                        table.insert(self.filters.timers, v)
-                        did = true
-                    end
-                end
-            elseif type(timers) == "number" then
-                table.insert(self.filters.timers, timers)
-                did = true
-            end
-        end
-        
-        return did
-    end,
-    
-    -- Remove filter by registered id.
-    -- Params: `filterid` (funcid returned by `addFunction`)
-    removeFilter = function(self, ids, names, channels, timers)
-        local did = false
-        
-        if names ~= nil then
-            if type(names) == "table" and #names ~= 0 then
-                for k,v in pairs(names) do
-                    local index = self:getFilterNameIndex(v)
-                    if index ~= nil then
-                        table.remove(self.filters.names, index)
-                    end
-                end
-            elseif type(names) == "string" then
-                local index = self:getFilterNameIndex(names)
-                if index ~= nil then
-                    table.remove(self.filters.names, index)
-                end
-            end
-        end
-        
-        if channels ~= nil then
-            if type(channels) == "table" and #channels ~= 0 then
-                for k,v in pairs(channels) do
-                    local index = self:getFilterChannelIndex(v)
-                    if index ~= nil then
-                        table.remove(self.filters.channels, index)
-                    end
-                end
-            elseif type(channels) == "number" then
-                local index = self:getFilterChannelIndex(channels)
-                if index ~= nil then
-                    table.remove(self.filters.channels, index)
-                end
-            end
-        end
-        
-        if timers ~= nil then
-            if type(timers) == "table" and #timers ~= 0 then
-                for k,v in pairs(timers) do
-                    local index = self:getFilterTimerIndex(timers)
-                    if index ~= nil then
-                        table.remove(self.filters.channels, v)
-                    end
-                end
-            elseif type(timers) == "number" then
-                local index = self:getFilterTimerIndex(timers)
-                if index ~= nil then
-                    table.remove(self.filters.channels, index)
-                end
-            end
-        end
-    end,
+    isRunning = false,
+    continueRunning = false,
     
     setChannel = function(self, newChannel)
         if type(newChannel) == "number" then
@@ -155,36 +24,124 @@ local __procedure = {
         end
     end,
     
-    -- Queue an event specifically for this procedure.
-    -- Params: event, override params
-    -- TODO: scheduleEvent(self, event, ...)
-    
+    -- TODO: addQueueEvent, to add events already queued by event:queue.
     -- Queues an event to be called called specifically for this procedure, this should catch it next.
     queueEvent = function(self, e, ...)
+        self.filters.events[e.id] = {event = e, params = {...}}
+        
         if #({...}) > 0 then
-            self:addFilter(e.id)
             return os.queueEvent(e.name, e.id, e.channel, self.id, ...)
         else
-            self:addFilter(e.id)
             return os.queueEvent(e.name, e.id, e.channel, self.id, unpack(e.params))
         end
     end,
-    -- Set timer to call an event.
-    timerEvent = function(self, e, seconds, repeating)
-        e.timer = os.startTimer(seconds)
-        self:addFilter(nil, nil, e.timer)
+    -- TODO: cancelQueueEvent - simply remove it from the filters
+    
+    -- TODO: addTimerEvent, to add an already created timer and assign an event
+    -- Set timer to call an event.    
+    timerEvent = function(self, e, secs, repeated, ...)
+        local timerid = os.startTimer(secs)
+        self.filters.timers[timerid] = {event = e, seconds = secs, repeating = repeated, params = {...}}
+        
         -- TODO: in listener, if name is "timer", loop through filter ids and see if they have a scheduled time
-        return true
+        return timerid
     end,
+    -- TODO: cancelTimerEvent - simply remove it from the filters
+    
     -- Scheduled an event to be called specifically for this procedure.
-    scheduleEvent = function(self, e, seconds, ...)
-        e.scheduled = os.clock() + seconds
-        self:addFilter(e.id)
-        -- TODO: in listener, during the update phase, loop through filter ids and see if they have a scheduled time
-        return true
-    end
+    scheduleEvent = function(self, e, secs, repeated, ...)
+        local scheduledID = 1
+        while self.filters.scheduled[scheduledID] ~= nil do
+            scheduledID = scheduledID + 1
+        end
+        
+        self.filters.scheduled[scheduledID] = {event = e, seconds = secs, time = (os.clock() + secs), repeating = repeated, params = {...}}
+        
+        -- TODO: in listener, during the update phase, loop through scheduled filters and check for this one's time
+        return scheduledID
+    end,
+    -- TODO: cancelScheduledEvent - simply remove it from the filters
     
     --TODO: in 'start', create a repeating timer event that calls __internalUpdate(self, event id)
+    start = function(self)
+        self.isRunning = true
+        
+        local updateEvent = nil
+        local updateTimer = nil
+        local updateCallbackName = ("internalUpdate_"..self.id)
+        local updateCallback = callback.register(updateCallbackName, function()
+            table.remove(self.filters.timers, updateTimer)
+            
+            if self.continueRunning then
+                if #self.filters.scheduled > 0 then
+                    local currentTime = os.clock()
+                    for k,v in pairs(self.filters.scheduled) do
+                        if v.time <= currentTime then
+                            self:queueEvent(v.event, unpack(v.params))
+                            
+                            if v.repeating then
+                                self.filters.scheduled[k].time = (os.clock() + v.seconds)
+                            else
+                                table.remove(self.filters.scheduled, k)
+                            end
+                        end
+                    end
+                end
+                
+                updateTimer = self:timerEvent(updateEvent, 1)
+            end
+        end)
+        updateEvent = event.new("e_internalUpdate_"..self.id, self.channel, updateCallback)
+        updateTimer = self:timerEvent(updateEvent, 1)
+        
+        local stopCallback = callback.register("internalStop_"..self.id, function()
+            self.continueRunning = false
+        end)
+        self.__stopEvent = event.new("e_internalStop_"..self.id, self.channel, stopCallback)
+        
+        self.continueRunning = true
+        while self.continueRunning do
+            local event = {os.pullEvent()}
+            
+            if self.continueRunning then
+                if event[1] == "timer" then
+                    local v = self.filters.timers[data[2]]
+                    if v ~= nil then
+                        self:queueEvent(v.event, unpack(v.params))
+                        
+                        if v.repeating then
+                            self:timerEvent(v.event, v.seconds, v.repeating, unpack(v.params))
+                        end
+                        table.remove(self.filters.timers, data[2])
+                    end
+                elseif type(event[2]) == "number" then
+                    local v = self.filters.events[event[2]]
+                    if v ~= nil and event[1] == v.event.name then
+                        -- # if not checking channel, or event is global (nil),
+                        --      or event channel matches channel, or procedure channel matches channel
+                        if (event[3] == nil or v.event.channel == nil or event[3] == v.event.channel or event[4] == self.id) then
+                            self:queueEvent(v.event, unpack(v.params))
+                            table.remove(self.filters.events, k)
+                        end
+                    end
+                end
+            end
+        end
+        
+        callback.unregister(updateCallback)
+        callback.unregister(stopCallback)
+        event.destroy(updateEvent)
+        event.destroy(self.__stopEvent)
+        
+        self.isRunning = false
+    end,
+    
+    __stopEvent = nil,
+    stop = function(self)
+        if self.isRunning then
+            self:queueEvent(self.__stopEvent)
+        end
+    end
 }
 
 local function __internalUpdate(procid, eventid)
