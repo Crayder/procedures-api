@@ -1,3 +1,5 @@
+callback = require("callback")
+
 local moduleTable = {}
 
 local __events = {}
@@ -53,7 +55,7 @@ local __event = {
 
 local function new(ename, echannel, ecallback, ...)
     local eventid = 1
-    while self.__events[eventid] ~= nil do
+    while __events[eventid] ~= nil do
         eventid = eventid + 1
     end
     

@@ -13,6 +13,8 @@ local __procedure = {
         scheduled = {} -- {event table, seconds, time scheduled, repeating boolean, params table}
     },
     
+    -- TODO: Possibly add "childProcedures", a table of procedures created to be ran when this one is, simultaneously to it.
+    
     isRunning = false,
     continueRunning = false,
     
@@ -27,7 +29,7 @@ local __procedure = {
             self.filters.events[e.id] = {}
         end
         
-        local index = #(elf.filters.events[e.id]) + 1
+        local index = #(self.filters.events[e.id]) + 1
         if #({...}) > 0 then
             self.filters.events[e.id][index] = {event = e, params = {...}}
             e:queue(self.id, ...)
@@ -63,64 +65,87 @@ local __procedure = {
     -- TODO: cancelScheduledEvent - simply remove it from the filters
     
     start = function(self)
+        print("set running")
         self.isRunning = true
         
+        print("set update stuff")
         local updateEvent = nil
         local updateTimer = nil
         local updateCallbackName = ("internalUpdate_"..self.id)
         local updateCallback = callback.register(updateCallbackName, function()
+            print("update called")
             table.remove(self.filters.timers, updateTimer)
             
             if self.continueRunning then
                 if #self.filters.scheduled > 0 then
+                    print("update checking scheduled")
                     local currentTime = os.clock()
                     for k,v in pairs(self.filters.scheduled) do
                         if v.time <= currentTime then
+                            print("update scheduled found")
                             self:queueEvent(v.event, unpack(v.params))
                             
                             if v.repeating then
+                                print("update scheduled reset")
                                 self.filters.scheduled[k].time = (os.clock() + v.seconds)
                             else
+                                print("update scheduled removed")
                                 table.remove(self.filters.scheduled, k)
                             end
                         end
                     end
                 end
                 
+                print("update reset")
                 updateTimer = self:timerEvent(updateEvent, 1)
             end
         end)
+        print("update create and make event timer")
         updateEvent = event.new("e_internalUpdate_"..self.id, self.channel, updateCallback)
         updateTimer = self:timerEvent(updateEvent, 1)
         
+        print("set stop stuff")
         local stopCallback = callback.register("internalStop_"..self.id, function()
+            print("stop called")
             self.continueRunning = false
         end)
         self.__stopProcedure = event.new("e_internalStop_"..self.id, self.channel, stopCallback)
         
+        print("set continueRunning and start")
         self.continueRunning = true
         while self.continueRunning do
+            print("pulling...")
             local event = {os.pullEvent()}
             
             if self.continueRunning then
+                print("checking queued and timers")
                 if event[1] == "timer" then
-                    local f = self.filters.timers[data[2]]
+                    print("is timer")
+                    local f = self.filters.timers[event[2]]
                     if f ~= nil then
+                        print("valid timer")
                         self:queueEvent(f.event, unpack(f.params))
                         
                         if f.repeating then
+                            print("timer reset")
                             self:timerEvent(f.event, f.seconds, f.repeating, unpack(f.params))
                         end
-                        table.remove(self.filters.timers, data[2])
+                        table.remove(self.filters.timers, event[2])
                     end
                 elseif type(event[2]) == "number" then
+                    print("has potential number")
                     local f = self.filters.events[event[2]]
                     if f ~= nil then
+                        --print("valid event id")
+                        print("valid event id "..event[2]..":"..textutils.serialize(f))
+                        sleep(2)
                         for k,v in pairs(f) do
                             if event[1] == v.event.name then
+                                print("valid event name found")
                                 -- # if not checking channel, or event is global (nil),
                                 --      or event channel matches channel, or procedure channel matches channel
                                 if (event[3] == nil or v.event.channel == nil or event[3] == v.event.channel or event[4] == self.id) then
+                                    print("valid event channel found")
                                     self:queueEvent(v.event, unpack(v.params))
                                     table.remove(f, k)
                                 end
@@ -131,16 +156,20 @@ local __procedure = {
             end
         end
         
+        print("unregistering callbacks")
         callback.unregister(updateCallback)
         callback.unregister(stopCallback)
+        print("unregistering event")
         event.destroy(updateEvent)
         event.destroy(self.__stopProcedure)
         
+        print("unset isRunning")
         self.isRunning = false
     end,
     
     __stopProcedure = nil,
     stop = function(self)
+        print("manual stop called")
         if self.isRunning then
             self:queueEvent(self.__stopProcedure)
         end
@@ -149,7 +178,7 @@ local __procedure = {
 
 local function new(echannel)
     local procid = 1
-    while self.__procedures[procid] ~= nil do
+    while __procedures[procid] ~= nil do
         procid = procid + 1
     end
     
@@ -163,7 +192,7 @@ local function new(echannel)
         __procedures[procid].channel = echannel
     end
     
-    return procid
+    return __procedures[procid]
 end
 moduleTable.new = new
 

@@ -1,6 +1,4 @@
-callback = require("callback.lua")
-event = require("event.lua")
-procedure = require("procedure.lua")
+procedure = require("procedure")
 
 mainUpdates = 0
 mainProc = procedure.new()
