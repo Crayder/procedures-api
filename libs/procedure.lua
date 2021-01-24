@@ -23,13 +23,20 @@ local __procedure = {
     end,
     
     queueEvent = function(self, e, ...)
-        self.filters.events[e.id] = {event = e, params = {...}}
-        
-        if #({...}) > 0 then
-            return os.queueEvent(e.name, e.id, e.channel, self.id, ...)
-        else
-            return os.queueEvent(e.name, e.id, e.channel, self.id, unpack(e.params))
+        if self.filters.events[e.id] == nil then
+            self.filters.events[e.id] = {}
         end
+        
+        local index = #(elf.filters.events[e.id]) + 1
+        if #({...}) > 0 then
+            self.filters.events[e.id][index] = {event = e, params = {...}}
+            e:queue(self.id, ...)
+            return index
+        else
+            self.filters.events[e.id][index] = {event = e, params = {unpack(e.params)}}
+            e:queue(self.id, unpack(e.params))
+        end
+        return index
     end,
     -- TODO: addQueueEvent, to add events already queued by event:queue.
     -- TODO: cancelQueueEvent - simply remove it from the filters
@@ -97,23 +104,27 @@ local __procedure = {
             
             if self.continueRunning then
                 if event[1] == "timer" then
-                    local v = self.filters.timers[data[2]]
-                    if v ~= nil then
-                        self:queueEvent(v.event, unpack(v.params))
+                    local f = self.filters.timers[data[2]]
+                    if f ~= nil then
+                        self:queueEvent(f.event, unpack(f.params))
                         
-                        if v.repeating then
-                            self:timerEvent(v.event, v.seconds, v.repeating, unpack(v.params))
+                        if f.repeating then
+                            self:timerEvent(f.event, f.seconds, f.repeating, unpack(f.params))
                         end
                         table.remove(self.filters.timers, data[2])
                     end
                 elseif type(event[2]) == "number" then
-                    local v = self.filters.events[event[2]]
-                    if v ~= nil and event[1] == v.event.name then
-                        -- # if not checking channel, or event is global (nil),
-                        --      or event channel matches channel, or procedure channel matches channel
-                        if (event[3] == nil or v.event.channel == nil or event[3] == v.event.channel or event[4] == self.id) then
-                            self:queueEvent(v.event, unpack(v.params))
-                            table.remove(self.filters.events, k)
+                    local f = self.filters.events[event[2]]
+                    if f ~= nil then
+                        for k,v in pairs(f) do
+                            if event[1] == v.event.name then
+                                -- # if not checking channel, or event is global (nil),
+                                --      or event channel matches channel, or procedure channel matches channel
+                                if (event[3] == nil or v.event.channel == nil or event[3] == v.event.channel or event[4] == self.id) then
+                                    self:queueEvent(v.event, unpack(v.params))
+                                    table.remove(f, k)
+                                end
+                            end
                         end
                     end
                 end
@@ -136,10 +147,7 @@ local __procedure = {
     end
 }
 
-local function __internalUpdate(procid, eventid)
-end
-
-local function new(eport, eupdateRate)
+local function new(echannel)
     local procid = 1
     while self.__procedures[procid] ~= nil do
         procid = procid + 1
@@ -149,14 +157,10 @@ local function new(eport, eupdateRate)
     
     __procedures[procid].id = procid
     
-    __procedures[procid].port = eport
-    if eport == nil then
-        __procedures[procid].port = math.random(1024, 256 * 256 - 1024)
-    end
-    
-    __procedures[procid].updateRate = eupdateRate
-    if eupdateRate == nil then
-        __procedures[procid].updateRate = 1
+    if echannel == nil then
+        __procedures[procid].channel = math.random(1024, 256 * 256 - 1024)
+    else
+        __procedures[procid].channel = echannel
     end
     
     return procid
@@ -193,6 +197,7 @@ function start(...)
     
     parallel.waitForAll(unpack(funcs))
 end
+moduleTable.start = start
 
 function stop(...)
     local procs = {...}
@@ -202,6 +207,7 @@ function stop(...)
         end
     end
 end
+moduleTable.stop = stop
 
 local function getTable(procid)
     return __procedures[procid]
