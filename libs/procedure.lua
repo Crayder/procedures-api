@@ -25,17 +25,20 @@ local __procedure = {
     end,
     
     queueEvent = function(self, e, ...)
+        logg(" queueEvent "..e.id)
         if self.filters.events[e.id] == nil then
+            logg(" new")
             self.filters.events[e.id] = {}
         end
         
         local index = #(self.filters.events[e.id]) + 1
         if #({...}) > 0 then
             self.filters.events[e.id][index] = {event = e, params = {...}}
+            logg(" e:queue 1")
             e:queue(self.id, ...)
-            return index
         else
             self.filters.events[e.id][index] = {event = e, params = {unpack(e.params)}}
+            logg(" e:queue 2")
             e:queue(self.id, unpack(e.params))
         end
         return index
@@ -65,87 +68,87 @@ local __procedure = {
     -- TODO: cancelScheduledEvent - simply remove it from the filters
     
     start = function(self)
-        print("set running")
+        logg("set running")
         self.isRunning = true
         
-        print("set update stuff")
+        logg("set update stuff")
         local updateEvent = nil
         local updateTimer = nil
         local updateCallbackName = ("internalUpdate_"..self.id)
         local updateCallback = callback.register(updateCallbackName, function()
-            print("update called")
+            logg("update called")
             table.remove(self.filters.timers, updateTimer)
             
             if self.continueRunning then
                 if #self.filters.scheduled > 0 then
-                    print("update checking scheduled")
+                    logg("update checking scheduled")
                     local currentTime = os.clock()
                     for k,v in pairs(self.filters.scheduled) do
                         if v.time <= currentTime then
-                            print("update scheduled found")
+                            logg("update scheduled found")
                             self:queueEvent(v.event, unpack(v.params))
                             
                             if v.repeating then
-                                print("update scheduled reset")
+                                logg("update scheduled reset")
                                 self.filters.scheduled[k].time = (os.clock() + v.seconds)
                             else
-                                print("update scheduled removed")
+                                logg("update scheduled removed")
                                 table.remove(self.filters.scheduled, k)
                             end
                         end
                     end
                 end
                 
-                print("update reset")
+                logg("update reset")
                 updateTimer = self:timerEvent(updateEvent, 1)
             end
         end)
-        print("update create and make event timer")
+        logg("update create and make event timer")
         updateEvent = event.new("e_internalUpdate_"..self.id, self.channel, updateCallback)
         updateTimer = self:timerEvent(updateEvent, 1)
         
-        print("set stop stuff")
+        logg("set stop stuff")
         local stopCallback = callback.register("internalStop_"..self.id, function()
-            print("stop called")
+            logg("stop called")
             self.continueRunning = false
         end)
         self.__stopProcedure = event.new("e_internalStop_"..self.id, self.channel, stopCallback)
         
-        print("set continueRunning and start")
+        logg("set continueRunning and start")
         self.continueRunning = true
         while self.continueRunning do
-            print("pulling...")
+            logg("pulling...")
             local event = {os.pullEvent()}
             
             if self.continueRunning then
-                print("checking queued and timers")
+                logg("checking queued and timers")
                 if event[1] == "timer" then
-                    print("is timer")
+                    logg("is timer")
                     local f = self.filters.timers[event[2]]
                     if f ~= nil then
-                        print("valid timer")
+                        logg("valid timer")
                         self:queueEvent(f.event, unpack(f.params))
                         
                         if f.repeating then
-                            print("timer reset")
+                            logg("timer reset")
                             self:timerEvent(f.event, f.seconds, f.repeating, unpack(f.params))
                         end
                         table.remove(self.filters.timers, event[2])
                     end
                 elseif type(event[2]) == "number" then
-                    print("has potential number")
+                    logg("has potential number")
                     local f = self.filters.events[event[2]]
                     if f ~= nil then
-                        --print("valid event id")
-                        print("valid event id "..event[2]..":"..textutils.serialize(f))
+                        --logg("valid event id")
+                        logg("valid event queue "..event[2])
                         sleep(2)
                         for k,v in pairs(f) do
                             if event[1] == v.event.name then
-                                print("valid event name found")
+                                logg("valid event name found: id "..v.event.id)
                                 -- # if not checking channel, or event is global (nil),
                                 --      or event channel matches channel, or procedure channel matches channel
                                 if (event[3] == nil or v.event.channel == nil or event[3] == v.event.channel or event[4] == self.id) then
-                                    print("valid event channel found")
+                                    logg("valid event channel found")
                                     self:queueEvent(v.event, unpack(v.params))
                                     table.remove(f, k)
                                 end
@@ -156,25 +159,33 @@ local __procedure = {
             end
         end
         
-        print("unregistering callbacks")
+        logg("unregistering callbacks")
         callback.unregister(updateCallback)
         callback.unregister(stopCallback)
-        print("unregistering event")
+        logg("unregistering event")
         event.destroy(updateEvent)
         event.destroy(self.__stopProcedure)
         
-        print("unset isRunning")
+        logg("unset isRunning")
         self.isRunning = false
     end,
     
     __stopProcedure = nil,
     stop = function(self)
-        print("manual stop called")
+        logg("manual stop called")
         if self.isRunning then
             self:queueEvent(self.__stopProcedure)
         end
     end
 }
+
+function logg(str)
+    print(str)
+    file = fs.open("log.txt", "a")
+    file.writeLine(statusString)
+    file.close()
+    sleep(0.1)
+end
 
 local function new(echannel)
     local procid = 1

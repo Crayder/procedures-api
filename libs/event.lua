@@ -26,6 +26,7 @@ local __event = {
     end,
     
     queue = function(self, ...)
+        print("    queue "..self.id)
         if #({...}) > 0 then
             return os.queueEvent(self.name, self.id, self.channel, nil, ...)
         else
