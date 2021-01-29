@@ -1,0 +1,42 @@
+Procedure
+
+local function __internalUpdate(procid, eventid)
+local function new(eport, eupdateRate)
+local function destroy(proc)
+local function start(...)
+local function stop(...)
+local function getTable(procid)
+local function getAll()
+
+setChannel = function(self, newChannel)
+queueEvent = function(self, e, ...)
+timerEvent = function(self, e, secs, repeated, ...)
+scheduleEvent = function(self, e, secs, repeated, ...)
+start = function(self)
+stop = function(self)
+
+Event
+
+local function new(ename, echannel, ecallback, ...)
+local function destroy(event)
+local function getTable(eventid)
+local function getAll()
+
+copy = function(self)
+call = function(self, ...)
+queue = function(self, ...)
+setChannel = function(self, echannel)
+setCallback = function(self, ecallback, ...)
+
+Callback
+
+local function register(name, ...)
+local function unregister(name, ...)
+local function getTable(name)
+local function getNames()
+local function count()
+
+call = function(self, ...)
+addFunction = function(self, func)
+removeFunction = function(self, func)
+getFunctionID = function(self, func)

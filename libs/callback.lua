@@ -107,7 +107,6 @@ local function unregister(name, ...)
         end
         
         if #toUnregister == 0 then
-            print("TEMPPP 3")
             __callbacks[cback.name].functions = nil
             __callbacks[cback.name] = nil
         end
