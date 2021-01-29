@@ -5,10 +5,6 @@ local __callback = {
     name = nil, -- callback name
     functions = {}, -- registered functions
     
-    copy = function(self)
-        return register(self.name, unpack(self.functions))
-    end,
-    
     call = function(self, ...)
         for k,func in pairs(self.functions) do
             func(...)
@@ -38,6 +34,8 @@ local __callback = {
         local funcid = nil
         if type(func) == "function" then
             funcid = self:getFunctionID(func)
+        elseif type(func) == "number" then
+            funcid = func
         end
         
         if funcid ~= nil and self.functions[funcid] ~= nil then
@@ -46,6 +44,14 @@ local __callback = {
         end
         
         return nil
+    end,
+    
+    functionCount = function(self)
+        local count = 0
+        for k,v in pairs(self.functions) do
+            count = count + 1
+        end
+        return count
     end,
     
     getFunctionID = function(self, func)
@@ -68,6 +74,7 @@ local function register(name, ...)
     __callbacks[name] = setmetatable({}, {__index = __callback})
     
     __callbacks[name].name = name
+    __callbacks[name].functions = {}
     
     local toRegister = {...}
     for k,v in pairs(toRegister) do
@@ -88,22 +95,21 @@ local function unregister(name, ...)
         cback = name
     end
     
-    if cback ~= nil and cback.functions ~= nil then
+    if cback ~= nil then
         local toUnregister = {...}
-        if #toUnregister == 0 then
-            cback.functions = {}
-        else
-            for k,v in pairs(toUnregister) do
-                if type(v) == "function" then
-                    cback:removeFunction(v)
-                elseif type(v) == "number" then
-                    cback:removeFunction(cback.functions[v])
-                end
+        
+        for k,v in pairs(toUnregister) do
+            if type(v) == "function" then
+                __callbacks[cback.name]:removeFunction(v)
+            elseif type(v) == "number" then
+                __callbacks[cback.name]:removeFunction(cback.functions[v])
             end
         end
         
-        if cback ~= nil and #(cback.functions) == 0 then
-            table.remove(__callbacks, cback.name)
+        if #toUnregister == 0 then
+            print("TEMPPP 3")
+            __callbacks[cback.name].functions = nil
+            __callbacks[cback.name] = nil
         end
     end
 end
@@ -114,9 +120,24 @@ local function getTable(name)
 end
 moduleTable.getTable = getTable
 
-local function getAll()
-    return __callbacks
+local function getNames()
+    local list = {}
+    local count = 0
+    
+    for k,_ in pairs(__callbacks) do
+        table.insert(list,k)
+        count = count + 1
+    end
+    
+    return list, count
 end
-moduleTable.getAll = getAll
+moduleTable.getNames = getNames
+
+local function count()
+    local count = 0
+    for _ in pairs(__callbacks) do count = count + 1 end
+    return count
+end
+moduleTable.count = count
 
 return moduleTable

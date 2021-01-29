@@ -1,4 +1,3 @@
-callback = require("callback")
 event = require("event")
 
 local moduleTable = {}
@@ -117,9 +116,15 @@ local __procedure = {
         logg("set continueRunning and start")
         self.continueRunning = true
         while self.continueRunning do
-            logg("pulling...")
+            logg("pulling...", 1)
             local event = {os.pullEvent()}
-            
+            for k,v in pairs(self.filters.timers) do
+                logg("stuff ("..k.."): "..v.event.name, 1)--textutils.serialize(v), 1)
+                --sleep(5)
+            end
+            logg("event: "..textutils.serialize(event), 1)
+            --sleep(5)
+                        
             if self.continueRunning then
                 logg("checking queued and timers")
                 if event[1] == "timer" then
@@ -139,9 +144,7 @@ local __procedure = {
                     logg("has potential number")
                     local f = self.filters.events[event[2]]
                     if f ~= nil then
-                        --logg("valid event id")
                         logg("valid event queue "..event[2])
-                        sleep(2)
                         for k,v in pairs(f) do
                             if event[1] == v.event.name then
                                 logg("valid event name found: id "..v.event.id)
@@ -179,12 +182,18 @@ local __procedure = {
     end
 }
 
-function logg(str)
-    print(str)
-    file = fs.open("log.txt", "a")
-    file.writeLine(statusString)
-    file.close()
-    sleep(0.1)
+LOG_PRINT_LEVEL = 0
+LOG_EXPORT_LEVEL = 0
+function logg(str, doit)
+    if LOG_PRINT_LEVEL == 0 or (doit ~= nil and doit >= LOG_PRINT_LEVEL) then
+        print(str)
+    end
+    if LOG_EXPORT_LEVEL == 0 or (doit ~= nil and doit >= LOG_EXPORT_LEVEL) then
+        file = fs.open("log.txt", "a")
+        file.writeLine(str)
+        file.close()
+    end
+    --sleep(0.1)
 end
 
 local function new(echannel)

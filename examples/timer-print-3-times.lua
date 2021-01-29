@@ -12,7 +12,7 @@ eventPrintThree = event.new("main_update", nil, callback.register("main_update",
     end
 end))
 
-mainProc:timerEvent(eventPrintThree, 1, true)
+--mainProc:timerEvent(eventPrintThree, 1, true)
 mainProc:start()
 
 callback.unregister("main_update")

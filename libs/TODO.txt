@@ -1,0 +1,5 @@
+TODO
+
+Make a "gorton" module, for settings loading and logging, etc. This will be the core.
+
+Make a tests script. Test everything in order, bottom up. Starting with callbacks, then events, then procedure basics.
