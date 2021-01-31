@@ -18,7 +18,7 @@ local urls = {
     ["lust"] = "https://www.dropbox.com/s/krnhdwovqgbpcp4/lust.lua?dl=1",
     
     ["tests-callback"] = "https://www.dropbox.com/s/w1r6kl8lu8yowi1/callback-tests.lua?dl=1",
-    --["tests-event"] = "TODO: ",
+    ["tests-event"] = "https://www.dropbox.com/s/2fuefl8mole1lsa/event-tests.lua?dl=1",
     --["tests-procedure"] = "TODO: ",
     
     -- examples
@@ -84,8 +84,8 @@ elseif params[1] == "procapi" then
 elseif params[1] == "tests" then
     print("Gorton Downloader: Attempting to grab all 'tests'...")
     replaceFile("tests-callback")
-    --replaceFile("tests-event")
-    --replaceFile("tests-procedure")
+    replaceFile("tests-event")
+    replaceFile("tests-procedure")
 elseif params[1] == "example" then
     print("Gorton Downloader: Attempting to grab all 'skynettest' programs...")
     replaceFile("print3parallel")

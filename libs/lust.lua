@@ -6,18 +6,20 @@ local lust = {}
 lust.level = 0
 lust.passes = 0
 lust.errors = 0
+lust.onErrors = {}
 lust.befores = {}
 lust.afters = {}
 
-local red = "! "
-local green = "  "
-local normal = "  "
+local red = ""
+local green = ""
+local normal = ""
 local function indent(level) return string.rep('\t', level or lust.level) end
 
 function lust.describe(name, fn)
   print(indent() .. name)
   lust.level = lust.level + 1
   fn()
+  lust.onErrors[lust.level] = {}
   lust.befores[lust.level] = {}
   lust.afters[lust.level] = {}
   lust.level = lust.level - 1
@@ -39,7 +41,14 @@ function lust.it(name, fn)
   local label = success and 'PASS' or 'FAIL'
   print(indent() .. color .. label .. normal .. ' ' .. name)
   if err then
-    print(indent(lust.level + 1) .. red .. err .. normal)
+        print(indent(lust.level + 1) .. red .. err .. normal)
+        for level = 1, lust.level do
+            if lust.onErrors[level] then
+                for i = 1, #lust.onErrors[level] do
+                    lust.onErrors[level][i](name)
+                end
+            end
+        end
   end
 
   for level = 1, lust.level do
@@ -49,6 +58,11 @@ function lust.it(name, fn)
       end
     end
   end
+end
+
+function lust.onError(fn)
+  lust.onErrors[lust.level] = lust.onErrors[lust.level] or {}
+  table.insert(lust.onErrors[lust.level], fn)
 end
 
 function lust.before(fn)

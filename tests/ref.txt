@@ -1,0 +1,47 @@
+Procedure
+
+local function __internalUpdate(procid, eventid)
+local function new(eport, eupdateRate)
+local function destroy(proc)
+local function start(...)
+local function stop(...)
+local function getTable(procid)
+local function getAll()
+
+setChannel = function(self, newChannel)
+queueEvent = function(self, e, ...)
+timerEvent = function(self, e, secs, repeated, ...)
+scheduleEvent = function(self, e, secs, repeated, ...)
+start = function(self)
+stop = function(self)
+
+
+# Event
+
+* copy = function(self)
+* call = function(self, ...)
+TODO: perhaps 'queue' should just be handled in procedure module.
+    * queue = function(self, ...)
+* setChannel = function(self, echannel)
+* setCallback = function(self, ecallback, ...)
+
+* function new(ename, echannel, ecallback, ...)
+* function destroy(eventid)
+* function getTable(eventid)
+* function getIDs()
+* function count()
+
+
+# Callback
+
+* call = function(self, ...)
+* addFunction = function(self, func)
+* removeFunction = function(self, func)
+* functionCount = function(self)
+* getFunctionID = function(self, func)
+    
+* function register(name, ...)
+* function unregister(name, ...)
+* function getTable(name)
+* function getNames()
+* function count()

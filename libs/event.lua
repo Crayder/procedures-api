@@ -11,7 +11,7 @@ local __event = {
     params = nil, -- callback params
     
     copy = function(self)
-        return new(self.name, self.channel, self.callback, unpack(self.params))
+        return moduleTable.new(self.name, self.channel, self.callback, unpack(self.params))
     end,
     
     call = function(self, ...)
@@ -19,18 +19,19 @@ local __event = {
             if #({...}) > 0 then
                 return self.callback:call(self.id, ...)
             else
-                return self.callback:call(self.id, self.params)
+                return self.callback:call(self.id, unpack(self.params))
             end
         end
         return nil
     end,
     
     queue = function(self, ...)
-        print("    queue "..self.id)
         if #({...}) > 0 then
             return os.queueEvent(self.name, self.id, self.channel, nil, ...)
-        else
+        elseif #(self.params) > 0 then
             return os.queueEvent(self.name, self.id, self.channel, nil, unpack(self.params))
+        else
+            return os.queueEvent(self.name, self.id, self.channel, nil)
         end
     end,
     
@@ -41,7 +42,7 @@ local __event = {
     end,
     
     setCallback = function(self, ecallback, ...)
-        if ecallback.name ~= nil then
+        if ecallback ~= nil and ecallback.name ~= nil then
             self.callback = ecallback
         elseif type(ecallback) == "string" then
             self.callback = callback.get(ecallback)
@@ -49,7 +50,7 @@ local __event = {
         
         local newParams = {...}
         if #newParams ~= 0 then
-            self.params = params
+            self.params = newParams
         end
     end
 }
@@ -66,10 +67,12 @@ local function new(ename, echannel, ecallback, ...)
     __events[eventid].name = ename
     __events[eventid].channel = echannel
     
-    if ecallback.name ~= nil then
-        __events[eventid].callback = ecallback
-    else
-        __events[eventid].callback = callback.get(ecallback)
+    if ecallback ~= nil  then
+        if ecallback.name ~= nil then
+            __events[eventid].callback = ecallback
+        else
+            __events[eventid].callback = callback.get(ecallback)
+        end
     end
     
     __events[eventid].params = {...}
@@ -78,14 +81,17 @@ local function new(ename, echannel, ecallback, ...)
 end
 moduleTable.new = new
 
-local function destroy(event)
-    if type(event) == "number" then
-        table.remove(__events, event)
-    elseif type(event) == "table" then
-        if event.id ~= nil then
-            table.remove(__events, event.id)
-        end
-        event = nil
+local function destroy(eventid)
+    local eve = nil
+    if type(eventid) == "number" then
+        eve = __events[eventid]
+    elseif type(eventid) == "table" then
+        eve = eventid
+    end
+    
+    if eve.id ~= nil then
+        __events[eve.id].params = nil
+        __events[eve.id] = nil
     end
 end
 moduleTable.destroy = destroy
@@ -95,9 +101,24 @@ local function getTable(eventid)
 end
 moduleTable.getTable = getTable
 
-local function getAll()
-    return __events
+local function getIDs()
+    local list = {}
+    local count = 0
+    
+    for k,_ in pairs(__events) do
+        table.insert(list,k)
+        count = count + 1
+    end
+    
+    return list, count
 end
-moduleTable.getAll = getAll
+moduleTable.getIDs = getIDs
+
+local function count()
+    local count = 0
+    for _ in pairs(__events) do count = count + 1 end
+    return count
+end
+moduleTable.count = count
 
 return moduleTable
