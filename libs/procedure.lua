@@ -24,26 +24,31 @@ local __procedure = {
     end,
     
     queueEvent = function(self, e, ...)
-        logg(" queueEvent "..e.id)
         if self.filters.events[e.id] == nil then
-            logg(" new")
             self.filters.events[e.id] = {}
         end
         
         local index = #(self.filters.events[e.id]) + 1
         if #({...}) > 0 then
             self.filters.events[e.id][index] = {event = e, params = {...}}
-            logg(" e:queue 1")
             e:queue(self.id, ...)
         else
             self.filters.events[e.id][index] = {event = e, params = {unpack(e.params)}}
-            logg(" e:queue 2")
             e:queue(self.id, unpack(e.params))
         end
         return index
     end,
-    -- TODO: addQueueEvent, to add events already queued by event:queue.
-    -- TODO: cancelQueueEvent - simply remove it from the filters
+    addQueueEvent = function(self, e, ...)
+        -- TODO: addQueueEvent, to add events already queued by event:queue.
+    end,
+    cancelQueueEvent = function(self, e, queuedid)
+        if type(e) == "table" and e.id ~= nil and self.filters.events[e.id][queuedid] ~= nil then
+            if self.filters.events[e.id][queuedid].params ~= nil then
+                self.filters.events[e.id][queuedid].params = nil
+            end
+            self.filters.events[e.id][queuedid] = nil
+        end
+    end,
     
     timerEvent = function(self, e, secs, repeated, ...)
         local timerid = os.startTimer(secs)
@@ -51,8 +56,17 @@ local __procedure = {
         
         return timerid
     end,
-    -- TODO: addTimerEvent, to add an already created timer and assign an event
-    -- TODO: cancelTimerEvent - simply remove it from the filters
+    addTimerEvent = function(self, e, secs, repeated, ...)
+        -- TODO: addTimerEvent, to add an already created timer and assign an event
+    end,
+    cancelTimerEvent = function(self, timerid)
+        if self.filters.timers[timerid] ~= nil then
+            if self.filters.timers[timerid].params ~= nil then
+                self.filters.timers[timerid].params = nil
+            end
+            self.filters.timers[timerid] = nil
+        end
+    end,
     
     scheduleEvent = function(self, e, secs, repeated, ...)
         local scheduledID = 1
@@ -64,7 +78,14 @@ local __procedure = {
         
         return scheduledID
     end,
-    -- TODO: cancelScheduledEvent - simply remove it from the filters
+    cancelScheduledEvent = function(self, schedid)
+        if self.filters.scheduled[schedid] ~= nil then
+            if self.filters.scheduled[schedid].params ~= nil then
+                self.filters.scheduled[schedid].params = nil
+            end
+            self.filters.scheduled[schedid] = nil
+        end
+    end,
     
     start = function(self)
         logg("set running")
@@ -263,9 +284,24 @@ local function getTable(procid)
 end
 moduleTable.getTable = getTable
 
-local function getAll()
-    return __procedures
+local function getIDs()
+    local list = {}
+    local count = 0
+    
+    for k,_ in pairs(__procedures) do
+        table.insert(list,k)
+        count = count + 1
+    end
+    
+    return list, count
 end
-moduleTable.getAll = getAll
+moduleTable.getIDs = getIDs
+
+local function count()
+    local count = 0
+    for _ in pairs(__procedures) do count = count + 1 end
+    return count
+end
+moduleTable.count = count
 
 return moduleTable

@@ -19,7 +19,7 @@ local urls = {
     
     ["tests-callback"] = "https://www.dropbox.com/s/w1r6kl8lu8yowi1/callback-tests.lua?dl=1",
     ["tests-event"] = "https://www.dropbox.com/s/2fuefl8mole1lsa/event-tests.lua?dl=1",
-    --["tests-procedure"] = "TODO: ",
+    ["tests-procedure"] = "https://www.dropbox.com/s/tiuajdum5ujik1h/procedure-tests.lua?dl=1",
     
     -- examples
     ["print3timer"] = "https://www.dropbox.com/s/7b92yhjh2dckssh/timer-print-3-times.lua?dl=1",

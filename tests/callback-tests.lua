@@ -20,9 +20,8 @@ end
 -------------
 
 describe('Callback Test Suite', function()
-    lust.after(function()
-        sleep(0.25)
-    end)
+    lust.after(function() sleep(0.25) end)
+    lust.onError(function() error("Script forcefully terminated.") end)
 
     describe('single', function()
         local t = 0
