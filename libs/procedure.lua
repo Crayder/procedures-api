@@ -39,7 +39,7 @@ local __procedure = {
         return index
     end,
     addQueueEvent = function(self, e, ...)
-        -- TODO: addQueueEvent, to add events already queued by event:queue.
+        -- TODO: addQueueEvent, to add events already queued by event:queue or expected to be (like a rednet_message maybe).
     end,
     cancelQueueEvent = function(self, e, queuedid)
         if type(e) == "table" and e.id ~= nil and self.filters.events[e.id][queuedid] ~= nil then
@@ -87,7 +87,7 @@ local __procedure = {
         end
     end,
     
-    start = function(self)
+    start = function(self, updateHook)
         logg("set running")
         self.isRunning = true
         
@@ -95,7 +95,7 @@ local __procedure = {
         local updateEvent = nil
         local updateTimer = nil
         local updateCallbackName = ("internalUpdate_"..self.id)
-        local updateCallback = callback.register(updateCallbackName, function()
+        local updateCallback = callback.register(updateCallbackName, updateHook, function()
             logg("update called")
             table.remove(self.filters.timers, updateTimer)
             
@@ -239,7 +239,7 @@ moduleTable.new = new
 
 local function destroy(proc)
     if type(proc) == "number" then
-        proc = getTable(proc)
+        proc = moduleTable.getTable(proc)
     end
     
     if type(proc) == "table" then

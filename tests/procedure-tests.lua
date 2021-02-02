@@ -41,12 +41,46 @@ describe('Procedure Test Suite', function()
         -- run a scheduled event until a var is set to a number (increasing each time the callback is called)
     
     describe('update hook', function()
+        local p = false
         
+        test("create a procedure, verify it's ID", function()
+            expect(procedure.count()).to.equal(0)
+            
+            p = procedure.new()
+            expect(procedure.count()).to.equal(1)
+            expect(p.id).to.equal(1)
+        end)
+        test("verify table and destroy by id", function()
+            local tmp = procedure.getTable(p.id)
+            expect(tmp.id).to.equal(p.id)
+            expect(tmp.name).to.equal(p.name)
+            expect(tmp.channel).to.equal(p.channel)
+            tmp:setChannel(69)
+            expect(p.channel).to.equal(69)
+            tmp = nil
+            
+            procedure.destroy(p.id)
+            expect(procedure.count()).to.equal(0)
+        end)
+        test("hook update timer, stop after 3 updates", function()
+            p = procedure.new() 
+            expect(procedure.count()).to.equal(1)
+            
+            local i = 3
+            p:start(function()
+                i = i - 1
+                if i == 0 then
+                    p:stop()
+                end
+            end)
+            expect(i).to.equal(0)
+        end)
     end)
-    describe('simultaneous start', function()
-    end)
-    describe('timed events', function()
-    end)
+    
+    -- describe('simultaneous start', function()
+    -- end)
+    -- describe('timed events', function()
+    -- end)
 end)
 
 

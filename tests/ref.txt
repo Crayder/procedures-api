@@ -1,10 +1,10 @@
 Procedure
     
-function new(echannel)
-function destroy(proc)
-function getTable(procid)
+* function new(echannel)
+* function destroy(proc)
+* function getTable(procid)
 function getIDs()
-function count()
+* function count()
 
 setChannel = function(self, newChannel)
 queueEvent = function(self, e, ...)
@@ -15,7 +15,7 @@ addTimerEvent = function(self, e, secs, repeated, ...)
 cancelTimerEvent = function(self, timerid)
 scheduleEvent = function(self, e, secs, repeated, ...)
 cancelScheduledEvent = function(self, schedid)
-start = function(self)
+start = function(self, updateHook)
 stop = function(self)
 
 

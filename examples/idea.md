@@ -1,0 +1,242 @@
+New system based on:
+* existing modules
+* https://nodejs.org/api/events.html
+* https://github.com/tmpim/Jua/blob/master/jua.lua
+* https://github.com/Ferdi265/ComputerCraft-EventLoop
+* https://github.com/qidydl/computercraft-things#libccevent
+* https://github.com/bjornbytes/lust/
+
+
+
+- Below should be all that's needed, aside from the `Callbacks` module.
+- May decide to make the `Listeners` their own module in place of the current `Events` module.
+    i.e. the modules for this system would be: the current `Callbacks` module, a new `Listeners` module, and a `Procedures` moduled as described below to handle all of them.
+- Procedures started with a procedure will just add to the parent procedure's child procedure list. They would not have their own listener, the parent procedure will listen for their listeners for them.
+
+
+procedure.new()
+    - creates an empty procedure.
+    - params: N/A
+    - returns: N/A
+procedure.start(...)
+    - Starts one or more procedures simultaneously. If called within a procedure the listeners for this one are added to the procedure it was started from within a 'child procedure'.
+    - params:
+        * ...: list of procedures to start, simultaneously if multiple.
+    - returns: true if it was started and completed or if it was added as a child. false otherwise.
+procedure.run(function startup(this id) end)
+    - creates an empty procedure, and runs it after defining proc:onStarted
+    - params:
+        - [function] startup: function to use for proc:onStarted, called immediately after running. Calls it with the created procedure ID.
+    - returns: N/A
+
+proc:start()
+    - starts this procedure.
+    - params: N/A
+    - returns: N/A
+proc:stop()
+    - stops this procedure (by calling the internal listener that does so).
+    - params: N/A
+    - returns: N/A
+proc:onEvent(event name, function or callback)
+    - params:
+        * event name: Name of the event to listen for.
+        * function or callback: Function or callback called when this event is detected. Should accept parameters expected to be received for given event name (ex. a "mouse_click" would accept "button", "x", and "y").
+    - returns: created event listener id.
+    
+    - Wrappers for this will be provided for all ComputerCraft events.
+        - onChar (key): char
+        - onKeyChange (key and key_up): keycode, [boolean] down, holding
+        - onMouseChange (mouse_click, mouse_up, mouse_scroll, mouse_drag): button, [boolean] down, x, y, [boolean] dragged
+        - onMouseScroll (mouse_scroll): direction, x, y
+        - onMonitorTouch (monitor_touch): side, x, y
+        - onModemMessage (modem_message): side, freq, replyFreq, message, distance
+        - onRednetMessage (rednet_message): senderid, message, protocol
+        - onRedstoneSignal (redstone): N/A
+        - onTerminate (terminate): N/A
+        - onDiskChange (disk and disk_eject): side, [boolean] inserted
+        - onPeripheralChange (peripheral and peripheral_detach): side, [boolean] attached
+        - setTimeout (timer): timerid
+        - setAlarm (alarm): alarmid -- uses os.time()
+    - Some customer wrappers as well to simplify some of those, introduce internal events, etc
+        - setInterval (onTimeout but automatically repeated): timerid
+        - setScheduled (like setAlarm, but using os.clock instead of os.time): sheduledid
+        - onRPC (remote procedure received from a server): rpcName, ...
+        - onStarted (called when the procedure is started): this procedure id
+        - onStopped (called when the procedure is stopped): N/A
+    - An internal onModemMessage will be made to handle calling procedures from remotes.
+        ```
+        - if message is table, and message.rpc is not nil
+            - if proc[message.rpc] exists and is a function or callback
+                - if procedure has RPC listeners
+                    - if message.params is nil
+                        - message.params = {}
+                    - call proc:onRPC with (message.rpc, unpack(message.params))
+        ```
+
+proc:cancel(listenerid)
+    - params:
+        * listenerid: id of a lister returned by proc:onEvent
+    - returns: true if it was cancelled, false if it didn't exist
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ex 1
+
+```
+p = procedure.new()
+p.onEvent("rednet_message", function(senderID, message, protocol)
+    if senderID == MASTER_ID then
+        if protocol == "move_command" then
+            -- move up, forward, or down depending on 'message'
+            return true
+        elseif protocol == "turn_command" then
+            -- turn left or right depending on 'message'
+            return true
+        end
+    end
+    return false
+end)
+```
+
+ex 2
+
+```
+moveCommandHandler = function(senderID, message, protocol)
+    if senderID == MASTER_ID then
+        if protocol == "move_command" then
+            -- move up, forward, or down depending on 'message'
+            return true
+        end
+    end
+    return false
+end
+turnCommandHandler = function(senderID, message, protocol)
+    if senderID == MASTER_ID then
+        if protocol == "turn_command" then
+            -- turn left or right depending on 'message'
+            return true
+        end
+    end
+    return false
+end
+
+p = procedure.new()
+p.onEvent("rednet_message", moveCommandHandler)
+p.onEvent("rednet_message", turnCommandHandler)
+```
+
+ex 3
+
+```
+rednetMessageReceived = callback.register("rednet_message", function(senderID, message, protocol)
+    if senderID == MASTER_ID then
+        if protocol == "move_command" then
+            -- move up, forward, or down depending on 'message'
+            return true
+        end
+        if protocol == "turn_command" then
+            -- turn left or right depending on 'message'
+            return true
+        end
+    end
+    return false
+end)
+
+p = procedure.new()
+p.onEvent("rednet_message", rednetMessageReceived)
+```
+
+ex 4
+
+```
+rednetMessageReceived = callback.register("rednet_message", function(senderID, message, protocol)
+    if senderID == MASTER_ID then
+        if protocol == "move_command" then
+            -- move up, forward, or down depending on 'message'
+            return true
+        end
+    end
+    return false
+end, function(senderID, message, protocol)
+    if senderID == MASTER_ID then
+        if protocol == "turn_command" then
+            -- turn left or right depending on 'message'
+            return true
+        end
+    end
+    return false
+end)
+
+p = procedure.new()
+p.onEvent("rednet_message", rednetMessageReceived)
+```
+
+ex 5
+
+```
+
+p = procedure.new()
+p.onEvent("modem_message", function(side, frequency, replyFrequency, message, distance)
+    if senderID == MASTER_ID then
+        if protocol == "move_command" then
+            -- move up, forward, or down depending on 'message'
+            return true
+        end
+        if protocol == "turn_command" then
+            -- turn left or right depending on 'message'
+            return true
+        end
+    end
+    return false
+end)
+
+```
+
+
+the script using the api will tell the procedure what to listen for. i.e, if it has a modem_message listener defined, the os.pullEvent checker will listen for modem_message's.
+
+
+
+scenario:
+- 
+
+```
+p = procedure.new()
+
+-- same as doing p.onEvent("modem_message", function(side, frequency, replyFrequency, message, distance)
+p:onModemMessage(function(side, frequency, replyFrequency, message, distance)
+    print(
+        "A modem message was received:\n"..
+        "\t\t- side: "..side.."\n"..
+        "\t\t- frequency: "..frequency.."\n"..
+        "\t\t- replyFrequency: "..replyFrequency.."\n"..
+        "\t\t- message: "..message.."\n"..
+        "\t\t- distance: "..distance
+    )
+    return true
+end)
+
+local twoSecondInterval = p:onInterval(2, function()
+    print("Interval 'twoSecondInterval' called.")
+    
+    -- call this will stop this interval: p:cancelInterval(twoSecondInterval)
+    -- it could later be started again with p.onInterval of course
+    
+    -- return true to keep repeating, return false to p:cancelInterval(this timer) automatically
+    return true
+end)
+
+```
+
+

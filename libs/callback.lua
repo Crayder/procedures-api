@@ -6,9 +6,21 @@ local __callback = {
     functions = {}, -- registered functions
     
     call = function(self, ...)
+        local allAdded = {}
+        local lastAdded = 0
+        local numAdded = 0
         for k,func in pairs(self.functions) do
-            func(...)
+            allAdded[k] = func(...)
+            lastAdded = k
+            numAdded = numAdded + 1
         end
+        
+        if numAdded == 1 then
+            return allAdded[lastAdded]
+        elseif numAdded > 1 then
+            return allAdded
+        end
+        return nil
     end,
     
     addFunction = function(self, func)
