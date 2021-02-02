@@ -94,113 +94,111 @@ proc:cancel(listenerid)
 ex 1
 
 ```
-p = procedure.new()
-p.onEvent("rednet_message", function(senderID, message, protocol)
-    if senderID == MASTER_ID then
-        if protocol == "move_command" then
-            -- move up, forward, or down depending on 'message'
-            return true
-        elseif protocol == "turn_command" then
-            -- turn left or right depending on 'message'
-            return true
+    p = procedure.new()
+    p.onEvent("rednet_message", function(senderID, message, protocol)
+        if senderID == MASTER_ID then
+            if protocol == "move_command" then
+                -- move up, forward, or down depending on 'message'
+                return true
+            elseif protocol == "turn_command" then
+                -- turn left or right depending on 'message'
+                return true
+            end
         end
-    end
-    return false
-end)
+        return false
+    end)
 ```
 
 ex 2
 
 ```
-moveCommandHandler = function(senderID, message, protocol)
-    if senderID == MASTER_ID then
-        if protocol == "move_command" then
-            -- move up, forward, or down depending on 'message'
-            return true
+    moveCommandHandler = function(senderID, message, protocol)
+        if senderID == MASTER_ID then
+            if protocol == "move_command" then
+                -- move up, forward, or down depending on 'message'
+                return true
+            end
         end
+        return false
     end
-    return false
-end
-turnCommandHandler = function(senderID, message, protocol)
-    if senderID == MASTER_ID then
-        if protocol == "turn_command" then
-            -- turn left or right depending on 'message'
-            return true
+    turnCommandHandler = function(senderID, message, protocol)
+        if senderID == MASTER_ID then
+            if protocol == "turn_command" then
+                -- turn left or right depending on 'message'
+                return true
+            end
         end
+        return false
     end
-    return false
-end
 
-p = procedure.new()
-p.onEvent("rednet_message", moveCommandHandler)
-p.onEvent("rednet_message", turnCommandHandler)
+    p = procedure.new()
+    p.onEvent("rednet_message", moveCommandHandler)
+    p.onEvent("rednet_message", turnCommandHandler)
 ```
 
 ex 3
 
 ```
-rednetMessageReceived = callback.register("rednet_message", function(senderID, message, protocol)
-    if senderID == MASTER_ID then
-        if protocol == "move_command" then
-            -- move up, forward, or down depending on 'message'
-            return true
+    rednetMessageReceived = callback.register("rednet_message", function(senderID, message, protocol)
+        if senderID == MASTER_ID then
+            if protocol == "move_command" then
+                -- move up, forward, or down depending on 'message'
+                return true
+            end
+            if protocol == "turn_command" then
+                -- turn left or right depending on 'message'
+                return true
+            end
         end
-        if protocol == "turn_command" then
-            -- turn left or right depending on 'message'
-            return true
-        end
-    end
-    return false
-end)
+        return false
+    end)
 
-p = procedure.new()
-p.onEvent("rednet_message", rednetMessageReceived)
+    p = procedure.new()
+    p.onEvent("rednet_message", rednetMessageReceived)
 ```
 
 ex 4
 
 ```
-rednetMessageReceived = callback.register("rednet_message", function(senderID, message, protocol)
-    if senderID == MASTER_ID then
-        if protocol == "move_command" then
-            -- move up, forward, or down depending on 'message'
-            return true
+    rednetMessageReceived = callback.register("rednet_message", function(senderID, message, protocol)
+        if senderID == MASTER_ID then
+            if protocol == "move_command" then
+                -- move up, forward, or down depending on 'message'
+                return true
+            end
         end
-    end
-    return false
-end, function(senderID, message, protocol)
-    if senderID == MASTER_ID then
-        if protocol == "turn_command" then
-            -- turn left or right depending on 'message'
-            return true
+        return false
+    end, function(senderID, message, protocol)
+        if senderID == MASTER_ID then
+            if protocol == "turn_command" then
+                -- turn left or right depending on 'message'
+                return true
+            end
         end
-    end
-    return false
-end)
+        return false
+    end)
 
-p = procedure.new()
-p.onEvent("rednet_message", rednetMessageReceived)
+    p = procedure.new()
+    p.onEvent("rednet_message", rednetMessageReceived)
 ```
 
 ex 5
 
 ```
-
-p = procedure.new()
-p.onEvent("modem_message", function(side, frequency, replyFrequency, message, distance)
-    if senderID == MASTER_ID then
-        if protocol == "move_command" then
-            -- move up, forward, or down depending on 'message'
-            return true
+    p = procedure.new()
+    p.onEvent("modem_message", function(side, frequency, replyFrequency, message, distance)
+        if senderID == MASTER_ID then
+            if protocol == "move_command" then
+                -- move up, forward, or down depending on 'message'
+                return true
+            end
+            if protocol == "turn_command" then
+                -- turn left or right depending on 'message'
+                return true
+            end
         end
-        if protocol == "turn_command" then
-            -- turn left or right depending on 'message'
-            return true
-        end
-    end
-    return false
-end)
-
+        return false
+    end)
 ```
 
 
@@ -212,31 +210,30 @@ scenario:
 - 
 
 ```
-p = procedure.new()
+    p = procedure.new()
 
--- same as doing p.onEvent("modem_message", function(side, frequency, replyFrequency, message, distance)
-p:onModemMessage(function(side, frequency, replyFrequency, message, distance)
-    print(
-        "A modem message was received:\n"..
-        "\t\t- side: "..side.."\n"..
-        "\t\t- frequency: "..frequency.."\n"..
-        "\t\t- replyFrequency: "..replyFrequency.."\n"..
-        "\t\t- message: "..message.."\n"..
-        "\t\t- distance: "..distance
-    )
-    return true
-end)
+    -- same as doing p.onEvent("modem_message", function(side, frequency, replyFrequency, message, distance)
+    p:onModemMessage(function(side, frequency, replyFrequency, message, distance)
+        print(
+            "A modem message was received:\n"..
+            "\t\t- side: "..side.."\n"..
+            "\t\t- frequency: "..frequency.."\n"..
+            "\t\t- replyFrequency: "..replyFrequency.."\n"..
+            "\t\t- message: "..message.."\n"..
+            "\t\t- distance: "..distance
+        )
+        return true
+    end)
 
-local twoSecondInterval = p:onInterval(2, function()
-    print("Interval 'twoSecondInterval' called.")
-    
-    -- call this will stop this interval: p:cancelInterval(twoSecondInterval)
-    -- it could later be started again with p.onInterval of course
-    
-    -- return true to keep repeating, return false to p:cancelInterval(this timer) automatically
-    return true
-end)
-
+    local twoSecondInterval = p:onInterval(2, function()
+        print("Interval 'twoSecondInterval' called.")
+        
+        -- call this will stop this interval: p:cancelInterval(twoSecondInterval)
+        -- it could later be started again with p.onInterval of course
+        
+        -- return true to keep repeating, return false to p:cancelInterval(this timer) automatically
+        return true
+    end)
 ```
 
 
