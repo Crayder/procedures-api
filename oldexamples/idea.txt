@@ -36,47 +36,130 @@ proc:start()
 proc:stop()
     - stops this procedure (by calling the internal listener that does so).
     - params: N/A
-    - returns: N/A
-proc:onEvent(event name, function or callback)
-    - params:
-        * event name: Name of the event to listen for.
-        * function or callback: Function or callback called when this event is detected. Should accept parameters expected to be received for given event name (ex. a "mouse_click" would accept "button", "x", and "y").
-    - returns: created event listener id.
-    
-    - Wrappers for this will be provided for all ComputerCraft events.
-        - onChar (key): char
-        - onKeyChange (key and key_up): keycode, [boolean] down, holding
-        - onMouseChange (mouse_click, mouse_up, mouse_scroll, mouse_drag): button, [boolean] down, x, y, [boolean] dragged
-        - onMouseScroll (mouse_scroll): direction, x, y
-        - onMonitorTouch (monitor_touch): side, x, y
-        - onModemMessage (modem_message): side, freq, replyFreq, message, distance
-        - onRednetMessage (rednet_message): senderid, message, protocol
-        - onRedstoneSignal (redstone): N/A
-        - onTerminate (terminate): N/A
-        - onDiskChange (disk and disk_eject): side, [boolean] inserted
-        - onPeripheralChange (peripheral and peripheral_detach): side, [boolean] attached
-        - setTimeout (timer): timerid
-        - setAlarm (alarm): alarmid -- uses os.time()
-    - Some customer wrappers as well to simplify some of those, introduce internal events, etc
-        - setInterval (onTimeout but automatically repeated): timerid
-        - setScheduled (like setAlarm, but using os.clock instead of os.time): sheduledid
-        - onRPC (remote procedure received from a server): rpcName, ...
-        - onStarted (called when the procedure is started): this procedure id
-        - onStopped (called when the procedure is stopped): N/A
-    - An internal onModemMessage will be made to handle calling procedures from remotes.
-        ```
-        - if message is table, and message.rpc is not nil
-            - if proc[message.rpc] exists and is a function or callback
-                - if procedure has RPC listeners
-                    - if message.params is nil
-                        - message.params = {}
-                    - call proc:onRPC with (message.rpc, unpack(message.params))
-        ```
+    - returns: N/ALevel 1: Procedure Main API
 
-proc:cancel(listenerid)
-    - params:
-        * listenerid: id of a lister returned by proc:onEvent
-    - returns: true if it was cancelled, false if it didn't exist
+    # procedure.new()
+        - creates an empty procedure, returns index
+
+    # procedure.destroy(...)
+        - destroy given procedure(s) by index or table
+
+    # procedure.start(...)
+        - Starts one or more procedures simultaneously
+        - if called within a procedure the listeners for this one are added to the procedure it was started from within a 'child procedure'
+        - returns true if it was started and completed or if it was added as a child, false otherwise
+        - params:
+            list of procedures to start, simultaneously if multiple
+
+    # procedure.run(function startup(this id) end)
+        - creates an empty procedure, runs it after defining proc:onStarted listener
+        - params:
+            - function to use for proc:onStarted, called immediately after running with the created procedure ID
+
+    # proc:start()
+        - starts this procedure
+
+    # proc:stop()
+        - stops this procedure (by calling the internal listener that does so)
+
+Level 2: Listener Stuff (mostly for internal use, but usuable otherwise)
+
+    # proc:addListener(eventName, callback)
+        - adds and activates, returns index (index assigned per procedure)
+
+    # proc:removeListener(listenerID)
+        - deactivates and removes given listenerID
+
+    # proc:removeAllListeners([eventName])
+        - deactivates and removes all listeners for given event (or all events if no params)
+
+    # proc:getListeners([eventName])
+        - return list of all listeners for given event (or all events if no params)
+
+    # proc:setListenerEvent(listenerID, eventName)
+        - changes the event name for used for given listener
+
+    # proc:getListenerNames()
+        - return list of all event names with listeners
+
+    # proc:countListeners(eventName)
+        - return total count of all listeners for given event (or all events if no params)
+
+    # proc:listenerOn(eventName, listenerID)
+        - mark a listener as active
+
+    # proc:listenerOff(eventName, listenerID)
+        - mark a listener as inactive (for timers this will remove the listener)
+
+    # proc:listenerOnce(eventName, listenerID)
+        - mark a listener as active, and set it so that when it's found by the listener it'll auto deactivate
+
+    ### The following are basically all wrappers for proc:addListener
+    # proc:onEvent(event name, function or callback)
+        - returns created event listener id
+        - params:
+            * event name: Name of the event to listen for.
+            * function or callback: Function or callback called when this event is detected. Should accept parameters expected to be received for given event name (ex. a "mouse_click" would accept "button", "x", and "y").
+        - wrappers for this will be provided for all [main] ComputerCraft events and more
+            - onChar (key): char
+            - onKeyChange (key and key_up): keycode, [boolean] down, holding
+            - onMouseChange (mouse_click, mouse_up, mouse_scroll, mouse_drag): button, [boolean] down, x, y, [boolean] dragged
+            - onMouseScroll (mouse_scroll): direction, x, y
+            - onMonitorTouch (monitor_touch): side, x, y
+            - onModemMessage (modem_message): side, freq, replyFreq, message, distance
+            - onRednetMessage (rednet_message): senderid, message, protocol
+            - onRedstoneSignal (redstone): N/A
+            - onTerminate (terminate): N/A
+            - onDiskChange (disk and disk_eject): side, [boolean] inserted
+            - onPeripheralChange (peripheral and peripheral_detach): side, [boolean] attached
+            - onTimeout (timer): timerid
+            - onAlarm (alarm): alarmid - uses os.time()
+        - some custom wrappers as well to simplify some of those, introduce internal events, etc
+            - onInterval (onTimeout but automatically repeated): timerid
+            - onScheduled (like setAlarm, but using os.clock instead of os.time): sheduledid
+            - onRPC (remote procedure received from a server): rpcName, ...
+            - onStarted (called when the procedure is started): this procedure id
+            - onStopped (called when the procedure is stopped): N/A
+        - An internal onModemMessage will be made to handle calling procedures from remotes.
+            ```
+            - if message is table, and message.rpc is not nil
+                - if proc[message.rpc] exists and is a function or callback
+                    - if procedure has RPC listeners
+                        - if message.params is nil
+                            - message.params = {}
+                        - call proc:onRPC with (message.rpc, unpack(message.params))
+            ```
+
+Level 3: Callbacks Class
+
+    # callback.new(...)
+        - create new callback index with given function(s)
+        - returns created numeric index
+
+    # callback.getIndexes()
+        - get all callback indexes
+
+    # callback.getTable(index)
+        - returns given callback index as an object
+
+    # callback:destroy()
+        - destroy given callback id
+
+    # callback:registerFunction(...)
+        - register (additional) function(s) to a callback index
+        - creates if doesn't exist
+
+    # callback:unregisterFunction(...)
+        - unregister function from a callback index, all if no functions are passed
+        - returns true if this was effectively all functions, false if not all were removed
+
+    # callback:getFunctions()
+        - get all functions of given index
+
+    # callback:call(...)
+        - call functions of given callback index with passed params
+
+
 
 
 
